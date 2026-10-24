@@ -44,7 +44,7 @@ const step = (n, s) => console.log('\n' + C.b + '[' + n + '] ' + s + C.x);
 /* ---------------- 参数 ---------------- */
 
 function parseArgs(argv) {
-  const a = { token: '', repo: 'ledger-studio', proxy: 'auto', noProxy: false, zip: '', keepRelease: false };
+  const a = { token: '', repo: 'ledger-studio', proxy: 'auto', noProxy: false, zip: '', keepRelease: false, syncAll: false };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
     if (k === '--token') a.token = argv[++i] || '';
@@ -53,6 +53,7 @@ function parseArgs(argv) {
     else if (k === '--no-proxy') a.noProxy = true;
     else if (k === '--zip') a.zip = argv[++i] || '';
     else if (k === '--keep-release') a.keepRelease = true;
+    else if (k === '--sync-all') a.syncAll = true;
   }
   return a;
 }
@@ -206,14 +207,77 @@ function findZip(cfg) {
   return null;
 }
 
-function readChangelogSection() {
+/** 取出 CHANGELOG 里指定档号（如 LST-v1.1.5）的整节内容 */
+function readChangelogSection(docNo) {
+  const want = docNo || DOC_NO;
   const p = path.join(ROOT, 'CHANGELOG.md');
-  if (!fs.existsSync(p)) return DOC_NO;
+  if (!fs.existsSync(p)) return want;
   const txt = fs.readFileSync(p, 'utf8');
-  const idx = txt.indexOf('## ' + DOC_NO);
-  if (idx < 0) return DOC_NO;
+  const idx = txt.indexOf('## ' + want);
+  if (idx < 0) return want;
   const next = txt.indexOf('\n## ', idx + 3);
   return txt.slice(idx, next < 0 ? undefined : next).trim();
+}
+
+/** 列出 CHANGELOG 里所有版本档号 */
+function listChangelogDocNos() {
+  const p = path.join(ROOT, 'CHANGELOG.md');
+  if (!fs.existsSync(p)) return [];
+  const out = [];
+  const re = /^## (LST-v\d[\d.]*)/gm;
+  let m;
+  const txt = fs.readFileSync(p, 'utf8');
+  while ((m = re.exec(txt)) !== null) out.push(m[1]);
+  return out;
+}
+
+function docNoToTag(docNo) {
+  return 'v' + String(docNo).replace(/^LST-v/, '');
+}
+
+/* ---------------- 同步所有已发布版本的说明 ---------------- */
+
+/**
+ * 遍历 CHANGELOG 里的每个版本，如果远端已有对应 Release，就把说明更新成 CHANGELOG 的当前内容。
+ * 用于「历史版本的说明写错了/写多了，想统一改掉」这种场景。
+ */
+async function syncAllReleases(api, repoPath) {
+  const docNos = listChangelogDocNos();
+  if (!docNos.length) {
+    warn('CHANGELOG 里没找到版本小节');
+    return { updated: 0, unchanged: 0, missing: 0 };
+  }
+
+  let updated = 0, unchanged = 0, missing = 0;
+
+  for (const docNo of docNos) {
+    const tag = docNoToTag(docNo);
+    const r = await api.call('GET', repoPath + '/releases/tags/' + tag);
+
+    if (r.status !== 200) {
+      say('  ' + C.dim + tag + ' 远端没有这个 Release，跳过' + C.x);
+      missing++;
+      continue;
+    }
+
+    const want = readChangelogSection(docNo);
+    const cur = String(r.json.body || '').trim();
+    if (cur === want) {
+      say('  ' + C.dim + tag + ' 说明已一致，无需改动' + C.x);
+      unchanged++;
+      continue;
+    }
+
+    const p = await api.call('PATCH', repoPath + '/releases/' + r.json.id, { body: want });
+    if (p.status === 200) {
+      ok(tag + ' 说明已更新');
+      updated++;
+    } else {
+      warn(tag + ' 更新失败（HTTP ' + p.status + '）');
+    }
+  }
+
+  return { updated, unchanged, missing };
 }
 
 /* ---------------- 主流程 ---------------- */
@@ -321,6 +385,18 @@ async function main() {
     fail('查询仓库失败（HTTP ' + repo.status + '）');
     say('  ' + ((repo.json && repo.json.message) || repo.text.slice(0, 200)));
     process.exit(1);
+  }
+
+  /* --sync-all：只同步各版本说明，不推送代码 */
+  if (cfg.syncAll) {
+    step(4, '同步所有已发布版本的说明');
+    const s = await syncAllReleases(api, repoPath);
+    say('');
+    say('  更新 ' + s.updated + ' 个　已一致 ' + s.unchanged + ' 个　远端缺失 ' + s.missing + ' 个');
+    say('');
+    say(C.dim + '本次只改 Release 说明，没有推送代码。' + C.x);
+    say('');
+    return;
   }
 
   /* 4. 推送代码 */
