@@ -6,7 +6,7 @@
   'use strict';
 
   var E = LedgerEngine;
-  var APP_DOC_NO = 'LST-v1.1.4';
+  var APP_DOC_NO = 'LST-v1.1.5';
   var CFG_KEY = 'ledger-studio-cfg-v1';
 
   var $ = function (id) { return document.getElementById(id); };
@@ -224,67 +224,195 @@
     return 0;
   }
 
+  /* ==================================================================
+   * 更新检查：多源并行竞速
+   * 同时请求所有通道，谁先返回有效内容就用谁，其余立即作废。
+   * 这样在 github.com 被拦的环境下不会一个接一个地等超时。
+   * ================================================================== */
+
+  var REMOTE_CACHE_KEY = 'ledger-remote-cache';
+
+  /** GitHub API 返回的 content 是 base64，需要按 UTF-8 解码 */
+  function b64ToJson(b64) {
+    var bin = atob(String(b64 || '').replace(/\s/g, ''));
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return JSON.parse(new TextDecoder('utf-8').decode(bytes));
+  }
+
+  function fillUrl(tpl, R) {
+    return String(tpl)
+      .replace('{owner}', R.owner || '')
+      .replace('{repo}', R.repo || '')
+      .replace('{branch}', R.branch || 'main');
+  }
+
+  function readCache(ttl) {
+    try {
+      var raw = localStorage.getItem(REMOTE_CACHE_KEY);
+      if (!raw) return null;
+      var c = JSON.parse(raw);
+      if (!c || !c.ts || !c.data || !c.data.version) return null;
+      if (Date.now() - c.ts > ttl) return null;
+      return c;
+    } catch (e) { return null; }
+  }
+
+  function writeCache(data, source) {
+    try {
+      localStorage.setItem(REMOTE_CACHE_KEY, JSON.stringify({
+        ts: Date.now(), data: data, source: source
+      }));
+    } catch (e) { /* 隐私模式下写入会失败，忽略 */ }
+  }
+
+  /** 试一个源，成功则返回 { data, source, ms } */
+  function trySource(ep, R) {
+    var url = fillUrl(ep.url, R);
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, R.timeoutMs || 6000);
+    var t0 = Date.now();
+
+    return fetch(url, { signal: ctrl.signal, cache: 'no-store' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      })
+      .then(function (txt) {
+        clearTimeout(timer);
+        var data;
+        if (ep.type === 'base64') {
+          var wrap = JSON.parse(txt);
+          data = b64ToJson(wrap.content);
+        } else {
+          data = JSON.parse(txt);
+        }
+        if (!data || !data.version) throw new Error('返回内容不是有效的 version.json');
+        return { data: data, source: ep.name, ms: Date.now() - t0 };
+      })
+      .catch(function (e) {
+        clearTimeout(timer);
+        var msg = e && e.name === 'AbortError' ? '超时' : (e && e.message) || String(e);
+        throw new Error(msg);
+      });
+  }
+
   /**
-   * 拉取远端信息。
-   * demo：不联网，返回本机内置内容（尚未发布到 GitHub 时用）
-   * live：按 endpoints 依次尝试
+   * 拉取远端版本信息。
+   * 策略：主通道并行竞速 → 全部失败才试兜底通道（GitHub API，有速率限制）
+   * @param {boolean} force true 时跳过缓存（用户手动点检查）
    */
-  function fetchRemote() {
+  function fetchRemote(force) {
     var R = window.LEDGER_REMOTE || {};
-    if (R.mode === 'demo') {
-      return new Promise(function (resolve) {
-        setTimeout(function () {
-          resolve({ mode: 'demo', announcement: R.announcement, latest: R.latest });
-        }, 600);
+
+    if (!force) {
+      var c = readCache(R.cacheTtlMs || 0);
+      if (c) {
+        return Promise.resolve({
+          data: c.data, source: c.source, cached: true, fails: []
+        });
+      }
+    }
+
+    var eps = R.endpoints || [];
+    if (!eps.length) return Promise.reject({ message: '未配置任何更新源', fails: [] });
+
+    /** 一组源并行竞速，先返回的赢 */
+    function race(list) {
+      return new Promise(function (resolve, reject) {
+        var pending = list.length;
+        var fails = [];
+        var settled = false;
+
+        list.forEach(function (ep) {
+          trySource(ep, R).then(function (ok) {
+            if (settled) return;
+            settled = true;
+            resolve({ data: ok.data, source: ok.source, ms: ok.ms, cached: false, fails: fails.slice() });
+          }).catch(function (e) {
+            fails.push({ source: ep.name, error: e.message });
+            if (--pending === 0 && !settled) {
+              reject({ message: '这一组通道均不可达', fails: fails });
+            }
+          });
+        });
       });
     }
-    var eps = R.endpoints || [];
-    var i = 0;
-    return new Promise(function (resolve, reject) {
-      function next() {
-        if (i >= eps.length) return reject(new Error('所有更新源均不可达'));
-        var url = eps[i++];
-        var ctrl = new AbortController();
-        var timer = setTimeout(function () { ctrl.abort(); }, 6000);
-        fetch(url, { signal: ctrl.signal, cache: 'no-store' })
-          .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-          .then(function (j) { clearTimeout(timer); resolve({ mode: 'live', latest: j, announcement: j.announcement }); })
-          .catch(function () { clearTimeout(timer); next(); });
-      }
-      next();
-    });
+
+    var primary = eps.filter(function (e) { return !e.fallback; });
+    var backup = eps.filter(function (e) { return e.fallback; });
+
+    function done(res) { writeCache(res.data, res.source); return res; }
+
+    return race(primary.length ? primary : backup)
+      .then(done)
+      .catch(function (err1) {
+        if (!primary.length || !backup.length) {
+          throw { message: '所有更新源均不可达', fails: err1.fails };
+        }
+        // 主通道全挂，再单独试兜底通道
+        return race(backup).then(done).catch(function (err2) {
+          throw {
+            message: '所有更新源均不可达',
+            fails: err1.fails.concat(err2.fails)
+          };
+        });
+      });
+  }
+
+  /** 把失败原因翻译成人能看懂的一句话 */
+  function explainFailure(fails) {
+    if (location.protocol === 'file:') {
+      return '当前是直接双击打开的 HTML，浏览器禁止跨域请求，所以查不了更新。' +
+        '改用 scripts/启动.bat（或 npm start）以本地服务方式打开即可。';
+    }
+    var all = (fails || []);
+    if (all.length && all.every(function (f) { return /超时/.test(f.error); })) {
+      return '所有通道都超时，可能是这台机器连不上外网，或需要在浏览器里配代理。' +
+        '离线环境不影响使用，可直接用离线 zip 覆盖更新。';
+    }
+    return '无法连接更新源。离线环境不影响使用，可改用离线 zip 覆盖更新。';
+  }
+
+  function renderUpdate(fresh, data, meta) {
+    var srcLine = meta
+      ? '来源：<b>' + esc(meta.source) + '</b>' + (meta.cached ? '（本机缓存）' : '') +
+        (meta.ms ? '　耗时 ' + meta.ms + ' ms' : '')
+      : '';
+    if ($('updSource')) $('updSource').innerHTML = srcLine;
+
+    if (fresh) {
+      $('updLevel').textContent = '有新版本';
+      $('updLevel').className = 'pill pill-WARN';
+      $('updTitle').textContent = data.docNo || ('v' + data.version);
+      $('updSummary').innerHTML = '当前版本 <b>' + APP_DOC_NO + '</b>，最新版本 <b>' +
+        esc(data.docNo || ('v' + data.version)) + '</b>（' + esc(data.releasedAt || '') + '）。' +
+        (data.notes && data.notes.length ? '' : '<br><span class="muted">该版本未提供变更说明。</span>');
+      $('updNotes').innerHTML = (data.notes || []).map(function (x) {
+        return '<li>' + esc(x) + '</li>';
+      }).join('');
+      $('envBadge').textContent = '有新版本 ' + (data.docNo || ('v' + data.version));
+      $('envBadge').className = 'badge badge-new';
+    } else {
+      $('updLevel').textContent = '已是最新';
+      $('updLevel').className = 'pill pill-INFO';
+      $('updTitle').textContent = '检查更新';
+      $('updSummary').innerHTML = '当前版本 <b>' + APP_DOC_NO + '</b>，已是最新。';
+      $('updNotes').innerHTML = '';
+      $('envBadge').textContent = '已是最新';
+      $('envBadge').className = 'badge badge-ok';
+    }
   }
 
   function doUpdateCheck(silent) {
     var btn = $('btnUpdate');
     if (!silent) { btn.disabled = true; btn.textContent = '检查中…'; }
-    fetchRemote().then(function (res) {
-      if (!silent) { btn.disabled = false; btn.textContent = '检查更新'; }
-      var latest = res.latest || {};
-      var fresh = latest.docNo && cmpVer(latest.version || latest.docNo, APP_DOC_NO) > 0;
-      var demoNote = res.mode === 'demo'
-        ? '<br><span class="muted">演示模式：内容为本地内置示例，尚未接入真实更新源。</span>' : '';
 
-      if (fresh) {
-        $('updLevel').textContent = '有新版本';
-        $('updLevel').className = 'pill pill-WARN';
-        $('updTitle').textContent = latest.docNo;
-        $('updSummary').innerHTML = '当前版本 <b>' + APP_DOC_NO + '</b>，最新版本 <b>' + latest.docNo +
-          '</b>（' + (latest.releasedAt || '') + '）。' + demoNote;
-        $('updNotes').innerHTML = (latest.notes || []).map(function (x) {
-          return '<li>' + esc(x) + '</li>';
-        }).join('');
-        $('envBadge').textContent = '有新版本 ' + latest.docNo;
-        $('envBadge').className = 'badge badge-new';
-      } else {
-        $('updLevel').textContent = '已是最新';
-        $('updLevel').className = 'pill pill-INFO';
-        $('updTitle').textContent = '检查更新';
-        $('updSummary').innerHTML = '当前版本 <b>' + APP_DOC_NO + '</b>，已是最新。' + demoNote;
-        $('updNotes').innerHTML = '';
-        $('envBadge').textContent = res.mode === 'demo' ? '演示模式' : '已是最新';
-        $('envBadge').className = 'badge badge-ok';
-      }
+    fetchRemote(!silent).then(function (res) {
+      if (!silent) { btn.disabled = false; btn.textContent = '检查更新'; }
+      var data = res.data || {};
+      var fresh = cmpVer(data.version, APP_DOC_NO) > 0;
+      renderUpdate(fresh, data, { source: res.source, cached: res.cached, ms: res.ms });
       if (!silent) $('dlgUpdate').showModal();
     }).catch(function (err) {
       if (!silent) { btn.disabled = false; btn.textContent = '检查更新'; }
@@ -294,29 +422,37 @@
         $('updLevel').textContent = '不可达';
         $('updLevel').className = 'pill pill-INFO';
         $('updTitle').textContent = '检查更新';
-        $('updSummary').textContent = '无法连接更新源（' + err.message + '）。离线环境不影响使用，可改用离线更新包。';
-        $('updNotes').innerHTML = '';
+        $('updSummary').textContent = explainFailure(err && err.fails) +
+          (err && err.message ? '（' + err.message + '）' : '');
+        $('updNotes').innerHTML = ((err && err.fails) || []).map(function (f) {
+          return '<li><code>' + esc(f.source) + '</code>　' + esc(f.error) + '</li>';
+        }).join('');
+        if ($('updSource')) $('updSource').innerHTML = '当前版本 <b>' + APP_DOC_NO + '</b>';
         $('dlgUpdate').showModal();
       }
     });
   }
 
   function bootNoticeAndUpdate() {
-    fetchRemote().then(function (res) {
-      if (res.announcement) {
-        showNotice(res.announcement, res.mode === 'demo' ? '当前为演示模式：公告内容为本机内置示例' : '');
-      }
-      var latest = res.latest || {};
-      if (latest.docNo && cmpVer(latest.version || latest.docNo, APP_DOC_NO) > 0) {
-        $('envBadge').textContent = '有新版本 ' + latest.docNo;
+    var R = window.LEDGER_REMOTE || {};
+
+    fetchRemote(false).then(function (res) {
+      var data = res.data || {};
+      var ann = data.announcement || R.fallbackAnnouncement;
+      if (ann) showNotice(ann, '');
+
+      if (cmpVer(data.version, APP_DOC_NO) > 0) {
+        $('envBadge').textContent = '有新版本 ' + (data.docNo || ('v' + data.version));
         $('envBadge').className = 'badge badge-new';
-      } else if (res.mode === 'demo') {
-        $('envBadge').textContent = '演示模式';
-        $('envBadge').className = 'badge badge-muted';
+      } else {
+        $('envBadge').textContent = '已是最新';
+        $('envBadge').className = 'badge badge-ok';
       }
     }).catch(function () {
       $('envBadge').textContent = '离线';
       $('envBadge').className = 'badge badge-muted';
+      // 联网失败也要保证有公告可看
+      if (R.fallbackAnnouncement) showNotice(R.fallbackAnnouncement, '当前无法联网，以下是本机内置的公告');
     });
   }
 
@@ -992,8 +1128,14 @@
 
   $('btnNotice').addEventListener('click', function () {
     var R = window.LEDGER_REMOTE || {};
-    if (R.announcement) showNotice(R.announcement, R.mode === 'demo' ? '当前为演示模式：公告内容为本机内置示例' : '');
-    else toast('暂无公告');
+    fetchRemote(false).then(function (res) {
+      var ann = (res.data && res.data.announcement) || R.fallbackAnnouncement;
+      if (ann) showNotice(ann, res.cached ? '（本机缓存）' : '');
+      else toast('暂无公告');
+    }).catch(function () {
+      if (R.fallbackAnnouncement) showNotice(R.fallbackAnnouncement, '当前无法联网，以下是本机内置的公告');
+      else toast('暂无公告');
+    });
   });
   $('btnNoticeOk').addEventListener('click', function () { $('dlgNotice').close(); });
   $('btnUpdOk').addEventListener('click', function () { $('dlgUpdate').close(); });

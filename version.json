@@ -1,13 +1,33 @@
 {
   "name": "ledger-studio",
-  "version": "1.1.4",
-  "docNo": "LST-v1.1.4",
+  "version": "1.1.5",
+  "docNo": "LST-v1.1.5",
   "engineDocNo": "ENG-v1.0.0",
   "backfillDocNo": "BFILL-v1.0.0",
   "releasedAt": "2026-10-24",
-  "notes": "新增一键发布脚本（自动建仓库/推送/打标签/发 Release）；修复 github.com 代理配置",
+  "notes": [
+    "更新检查接入真实数据源，不再显示演示数据",
+    "多个通道并行尝试，自动采用最先返回的那个",
+    "检查结果在本机缓存 30 分钟，点「检查更新」可强制刷新",
+    "检查失败时区分「网络不通」与「浏览器限制了跨域」",
+    "更新弹窗显示本次结果的来源通道与耗时"
+  ],
   "download": {
-    "zip": "https://github.com/USER/ledger-studio/releases/latest/download/ledger-studio.zip",
-    "jsdelivr": "https://cdn.jsdelivr.net/gh/USER/ledger-studio@main/version.json"
+    "zip": "https://github.com/LiuXiaobei7/ledger-studio/releases/latest/download/ledger-studio.zip",
+    "page": "https://github.com/LiuXiaobei7/ledger-studio/releases/latest"
+  },
+  "announcement": {
+    "id": "2026-10-24-02",
+    "title": "LST-v1.1.5 已发布",
+    "date": "2026-10-24",
+    "level": "info",
+    "summary": "更新检查改为真实联网检测：多个通道自动竞速，受限网络下也能查到新版本。",
+    "items": [
+      "【新】更新检查接入真实数据源，不再显示演示数据",
+      "【新】多个通道同时尝试，自动采用最先返回的那个，不需要你手动选",
+      "【新】检查结果在本机缓存 30 分钟，避免频繁联网；点「检查更新」可强制刷新",
+      "【调整】检查失败时会说明是「网络不通」还是「浏览器限制了跨域」",
+      "【提示】更新检查需要以本地服务方式打开（双击 启动.bat），直接双击 HTML 不可用"
+    ]
   }
 }

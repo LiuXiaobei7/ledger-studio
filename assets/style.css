@@ -447,3 +447,15 @@ progress::-webkit-progress-value { background: var(--primary); border-radius: 99
   font-size: 13.5px; line-height: 1.85; color: var(--text-2);
 }
 .dlg-quote b { color: var(--text); }
+
+/* ---------- 更新检查：来源信息 ---------- */
+.upd-source {
+  margin: 12px 0 0; padding-top: 10px;
+  border-top: 1px dashed var(--border);
+  font-size: 11.5px; color: var(--muted); line-height: 1.7;
+}
+.upd-source b { color: var(--text-2); font-weight: 600; }
+.upd-source code {
+  font-family: var(--mono); font-size: 11px;
+  background: var(--bg); padding: 1px 5px; border-radius: 4px;
+}

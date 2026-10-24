@@ -26,6 +26,9 @@ release/
 # 本地覆盖配置
 config.local.json
 
-# 发布用令牌，绝对不能提交
+# 令牌文件，任何形式都不要提交
 .github-token
 *-token
+令牌*
+*ghp_*
+scripts/*.txt

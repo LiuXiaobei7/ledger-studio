@@ -422,9 +422,11 @@ async function main() {
   } else if (!release) {
     warn('Release 未创建成功，无法上传附件');
   } else {
-    const fileName = path.basename(zipPath);
+    // 附件名固定，这样 releases/latest/download/ledger-studio.zip 永久有效，
+    // 不必随版本号改下载链接
+    const fileName = 'ledger-studio.zip';
     const sizeMB = (fs.statSync(zipPath).size / 1048576).toFixed(2);
-    say('  ' + fileName + '（' + sizeMB + ' MB）正在上传…');
+    say('  ' + path.basename(zipPath) + '（' + sizeMB + ' MB）正在上传为 ' + fileName + '…');
 
     async function putAsset() {
       return api.upload(release.upload_url.replace('{?name,label}', ''),
