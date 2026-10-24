@@ -1,9 +1,18 @@
 {
   "name": "ledger-studio",
-  "version": "1.0.0",
-  "docNo": "LST-v1.0.0",
-  "description": "档案台账工作台 —— 浏览器内检查与生成《文件台账》《案卷台账》，数据不出本机",
-  "keywords": ["archive", "ledger", "excel", "档案", "台账", "offline", "local-first"],
+  "version": "1.1.0",
+  "docNo": "LST-v1.1.0",
+  "description": "档案台账工作台 —— 浏览器内生成、检查与补录《文件台账》《案卷台账》，数据不出本机",
+  "keywords": [
+    "archive",
+    "ledger",
+    "excel",
+    "pdf",
+    "档案",
+    "台账",
+    "offline",
+    "local-first"
+  ],
   "license": "MIT",
   "author": "liuxi",
   "main": "server/server.js",

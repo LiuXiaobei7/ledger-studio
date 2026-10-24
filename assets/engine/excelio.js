@@ -90,5 +90,48 @@
     return buf;
   }
 
-  root.ExcelIO = { readLedger: readLedger, writeLedger: writeLedger, headerOf: headerOf };
+  /**
+   * 在原文件上回写指定单元格并整表排版，返回 ArrayBuffer。
+   * updates: [{ row: Excel行号, field: 列名, value }]
+   */
+  async function writeCellsBack(srcBuffer, updates) {
+    var wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(srcBuffer);
+    var ws = wb.worksheets[0];
+    var header = headerOf(ws);
+    var colOf = {};
+    header.forEach(function (h, i) { if (h && !(h in colOf)) colOf[h] = i + 1; });
+
+    var applied = 0;
+    (updates || []).forEach(function (u) {
+      var col = colOf[u.field];
+      if (!col || !u.row) return;
+      var cell = ws.getRow(u.row).getCell(col);
+      cell.value = u.value;
+      applied++;
+    });
+
+    var FONT = { name: '宋体', size: 11 };
+    var ALIGN = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    var maxRow = ws.rowCount || 0, maxCol = ws.columnCount || 0;
+    for (var r = 1; r <= maxRow; r++) {
+      var row = ws.getRow(r);
+      for (var c = 1; c <= maxCol; c++) {
+        var cell2 = row.getCell(c);
+        cell2.font = FONT;
+        cell2.alignment = ALIGN;
+        cell2.numFmt = '@';
+      }
+      row.commit();
+    }
+    var buf = await wb.xlsx.writeBuffer();
+    return { buffer: buf, applied: applied };
+  }
+
+  root.ExcelIO = {
+    readLedger: readLedger,
+    writeLedger: writeLedger,
+    writeCellsBack: writeCellsBack,
+    headerOf: headerOf
+  };
 })(typeof self !== 'undefined' ? self : this);

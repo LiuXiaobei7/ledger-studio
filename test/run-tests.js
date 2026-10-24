@@ -182,6 +182,43 @@ async function loadSheet(file, label) {
   const r6 = E.check(gs, gj3, ctx);
   ok(r6.items.some(i => i.rule === 'J4' && /不连续/.test(i.msg)), '跳号 1→5 能被检出');
 
+  /* ---------- 8. PDF 补录启发式 ---------- */
+  console.log('\n\x1b[1m[8] PDF 补录启发式\x1b[0m');
+  const B = require('../assets/engine/backfill.js');
+
+  const certText = `产品合格证
+宁波奥克斯智能科技股份有限公司
+产品名称：光伏发电用变压器
+型号规格：ZGS11-Z.G-1000/35
+产品编号：TKG711510002
+出厂编号：TKG711510002
+检验日期：2025年3月25日
+签发日期：2025-03-25
+文件档号：D0109-KJG01-0011-916-001-001
+本产品经检验符合 GB/T 1094.1-2013 标准`;
+
+  const d1 = B.guessDate(certText);
+  ok(d1.length > 0, '能从文字层找到日期候选');
+  eq(d1[0].ymd, 20250325, '日期取到 20250325');
+
+  const n1 = B.guessDocNo(certText, ['TKG']);
+  ok(n1.length > 0, '能找到编号候选');
+  eq(n1[0].value, 'TKG711510002', '编号取到 TKG711510002');
+  ok(!n1.some(x => /^D0109/.test(x.value)), '档号不会被误判为文件编号');
+  ok(!n1.some(x => x.value === '20250325'), '8 位日期不会被误判为编号');
+
+  // 误报控制：只有一个型号 token 时置信度应为低
+  const n2 = B.guessDocNo('型号 ZGS11-Z.G-1000/35 符合标准', []);
+  ok(!n2.length || n2[0].score < 4, '无关键词邻接的型号 token 不会高置信度命中');
+
+  // 文字归一化：全角数字 + 中文日期
+  const d3 = B.guessDate('签发日期：２０２５年０３月２５日');
+  ok(d3.length > 0 && d3[0].ymd === 20250325, '全角数字与中文年月日可归一化');
+
+  // 非法日期必须被拒绝
+  const d4 = B.guessDate('编号 20250230 不是合法日期');
+  ok(!d4.some(x => x.ymd === 20250230), '2025-02-30 被拒绝');
+
   /* ---------- 汇总 ---------- */
   console.log('\n' + '─'.repeat(52));
   const total = pass + fail;

@@ -12,88 +12,41 @@
     <span class="logo">档</span>
     <div>
       <h1>档案台账工作台</h1>
-      <p class="sub">检查 · 生成 · 规范化排版　<span id="docno" class="docno">—</span></p>
+      <p class="sub">生成 · 检查 · 补录　<span id="docno" class="docno">—</span></p>
     </div>
   </div>
   <div class="topbar-right">
     <span id="envBadge" class="badge badge-muted">离线可用</span>
-    <button id="btnUpdate" class="btn btn-ghost" title="检查是否有新版本">检查更新</button>
+    <button id="btnNotice" class="btn btn-ghost">公告</button>
+    <button id="btnUpdate" class="btn btn-ghost">检查更新</button>
     <button id="btnHelp" class="btn btn-ghost">使用说明</button>
   </div>
 </header>
 
 <nav class="tabs">
-  <button class="tab active" data-tab="check">检查台账</button>
-  <button class="tab" data-tab="build">生成台账</button>
+  <button class="tab active" data-tab="build">生成台账</button>
+  <button class="tab" data-tab="check">检查台账</button>
+  <button class="tab" data-tab="pdf">PDF 补录<span class="tab-badge">实验</span></button>
+  <button class="tab" data-tab="cfg">参数配置</button>
   <button class="tab" data-tab="rules">规则清单</button>
 </nav>
 
 <main>
-  <!-- ================= 检查 ================= -->
-  <section id="panel-check" class="panel active">
+  <!-- ================= 生成台账 ================= -->
+  <section id="panel-build" class="panel active">
+    <div id="buildAlert" class="alert alert-warn hidden">
+      <div class="alert-body">
+        <strong>使用前请先看这两点</strong>
+        <ul>
+          <li>导入的清单<b>至少要有</b>：案卷档号、案卷题名、文件题名、脊背宽度。其余字段会按归档规范自动推导。</li>
+          <li>生成台账属于<b>实验功能</b>，产出的台账请务必<b>人工检查</b>后，再进行导入等其他工作。</li>
+        </ul>
+      </div>
+      <button class="alert-close" id="btnCloseBuildAlert" title="关闭">×</button>
+    </div>
+
     <div class="grid2">
-      <div class="drop" id="dropFile" data-target="file">
-        <input type="file" id="inFile" accept=".xlsx,.xlsm" hidden>
-        <div class="drop-inner">
-          <div class="drop-icon">📄</div>
-          <strong>文件台账</strong>
-          <span class="drop-hint">点击选择或拖入 .xlsx</span>
-          <span class="drop-file" id="nameFile">未选择</span>
-        </div>
-      </div>
-      <div class="drop" id="dropJuan" data-target="juan">
-        <input type="file" id="inJuan" accept=".xlsx,.xlsm" hidden>
-        <div class="drop-inner">
-          <div class="drop-icon">🗂️</div>
-          <strong>案卷台账</strong>
-          <span class="drop-hint">点击选择或拖入 .xlsx</span>
-          <span class="drop-file" id="nameJuan">未选择</span>
-        </div>
-      </div>
-    </div>
-
-    <details class="advanced">
-      <summary>高级选项</summary>
-      <div class="adv-body">
-        <label class="chk">
-          <input type="checkbox" id="optPdf">
-          <span>同时校验 PDF 文件名与页数（选中后需再选 PDF 文件）</span>
-        </label>
-        <input type="file" id="inPdf" accept=".pdf" multiple hidden>
-        <div id="pdfPickRow" class="hidden">
-          <button class="btn btn-ghost" id="btnPickPdf">选择 PDF 文件…</button>
-          <span id="pdfCount" class="muted">未选择</span>
-        </div>
-        <p class="tip">PDF 页数为浏览器端估算，仅作参考；精确校验请用 CLI 版。</p>
-      </div>
-    </details>
-
-    <div class="actions">
-      <button id="btnCheck" class="btn btn-primary" disabled>开始检查</button>
-      <button id="btnLoadSample" class="btn btn-ghost">载入示例台账</button>
-      <span id="checkStatus" class="muted"></span>
-    </div>
-
-    <div id="checkResult" class="hidden">
-      <div class="summary">
-        <div class="card card-err"><span class="num" id="cntErr">0</span><span class="lbl">错误</span></div>
-        <div class="card card-warn"><span class="num" id="cntWarn">0</span><span class="lbl">提醒</span></div>
-        <div class="card card-info"><span class="num" id="cntInfo">0</span><span class="lbl">提示</span></div>
-        <div class="card card-verdict"><span class="num" id="verdict">—</span><span class="lbl">结论</span></div>
-      </div>
-      <div class="actions">
-        <button id="btnExportMd" class="btn btn-ghost">导出检查报告 (.md)</button>
-        <button id="btnDlFile" class="btn btn-ghost">下载已排版·文件台账</button>
-        <button id="btnDlJuan" class="btn btn-ghost">下载已排版·案卷台账</button>
-      </div>
-      <div id="ruleResults"></div>
-    </div>
-  </section>
-
-  <!-- ================= 生成 ================= -->
-  <section id="panel-build" class="panel">
-    <div class="grid2">
-      <div class="drop" id="dropList" data-target="list">
+      <div class="drop" id="dropList">
         <input type="file" id="inList" accept=".xlsx,.xlsm,.csv,.tsv,.txt" hidden>
         <div class="drop-inner">
           <div class="drop-icon">📋</div>
@@ -120,8 +73,8 @@ D0109-KJG01-0011-916-001	箱式变压器	30mm	光伏发电用变压器合格证	
         <div class="row">
           <label for="inPrefix">文件名前缀</label>
           <input type="text" id="inPrefix" value="导入模板" size="12">
+          <span class="tip">固定值与分类号映射在「参数配置」页修改</span>
         </div>
-        <p class="tip">必填 8 项：案卷档号、案卷题名、脊背宽度、文件题名、文件编号、文件日期、责任者、页数。跨多个分类号会自动按分类拆成多本。</p>
       </div>
     </details>
 
@@ -136,23 +89,248 @@ D0109-KJG01-0011-916-001	箱式变压器	30mm	光伏发电用变压器合格证	
     </div>
   </section>
 
-  <!-- ================= 规则 ================= -->
+  <!-- ================= 检查台账 ================= -->
+  <section id="panel-check" class="panel">
+    <div class="grid2">
+      <div class="drop" id="dropFile">
+        <input type="file" id="inFile" accept=".xlsx,.xlsm" hidden>
+        <div class="drop-inner">
+          <div class="drop-icon">📄</div>
+          <strong>文件台账</strong>
+          <span class="drop-hint">点击选择或拖入 .xlsx</span>
+          <span class="drop-file" id="nameFile">未选择</span>
+        </div>
+      </div>
+      <div class="drop" id="dropJuan">
+        <input type="file" id="inJuan" accept=".xlsx,.xlsm" hidden>
+        <div class="drop-inner">
+          <div class="drop-icon">🗂️</div>
+          <strong>案卷台账</strong>
+          <span class="drop-hint">点击选择或拖入 .xlsx</span>
+          <span class="drop-file" id="nameJuan">未选择</span>
+        </div>
+      </div>
+    </div>
+
+    <details class="advanced">
+      <summary>高级选项</summary>
+      <div class="adv-body">
+        <label class="chk">
+          <input type="checkbox" id="optPdf">
+          <span>同时校验 PDF 文件名与页数（选中后需再选 PDF 文件）</span>
+        </label>
+        <input type="file" id="inPdf" accept=".pdf" multiple hidden>
+        <div id="pdfPickRow" class="hidden">
+          <button class="btn btn-ghost" id="btnPickPdf">选择 PDF 文件…</button>
+          <span id="pdfCount" class="muted">未选择</span>
+        </div>
+        <p class="tip">PDF 页数为浏览器端估算，仅作参考；文件名比对是精确的。</p>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button id="btnCheck" class="btn btn-primary" disabled>开始检查</button>
+      <button id="btnLoadSample" class="btn btn-ghost">载入示例台账</button>
+      <span id="checkStatus" class="muted"></span>
+    </div>
+
+    <div id="checkResult" class="hidden">
+      <div class="summary">
+        <div class="card card-err"><span class="num" id="cntErr">0</span><span class="lbl">错误</span></div>
+        <div class="card card-warn"><span class="num" id="cntWarn">0</span><span class="lbl">提醒</span></div>
+        <div class="card card-info"><span class="num" id="cntInfo">0</span><span class="lbl">提示</span></div>
+        <div class="card card-verdict"><span class="num" id="verdict">—</span><span class="lbl">结论</span></div>
+      </div>
+      <div class="actions">
+        <button id="btnExportMd" class="btn btn-ghost">导出检查报告 (.md)</button>
+        <button id="btnDlFile" class="btn btn-ghost">下载已排版·文件台账</button>
+        <button id="btnDlJuan" class="btn btn-ghost">下载已排版·案卷台账</button>
+      </div>
+      <div id="ruleResults"></div>
+    </div>
+  </section>
+
+  <!-- ================= PDF 补录 ================= -->
+  <section id="panel-pdf" class="panel">
+    <div class="alert alert-info">
+      <div class="alert-body">
+        <strong>实验功能：PDF 源补录信息</strong>
+        <ul>
+          <li>只对<b>少量</b>缺失或错位的「文件编号 / 文件日期」做补录。若整本台账同类文件都没有编号或日期，本功能<b>无法补全</b>。</li>
+          <li>结果不保证准确。补录后请逐条核对，<b>不要把它当作可靠的录入手段</b>。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="drop" id="dropPdfDir">
+        <input type="file" id="inPdfDir" webkitdirectory directory multiple hidden>
+        <div class="drop-inner">
+          <div class="drop-icon">📁</div>
+          <strong>PDF 所在文件夹</strong>
+          <span class="drop-hint">选择整个文件夹，会递归读取其中的 .pdf</span>
+          <span class="drop-file" id="namePdfDir">未选择</span>
+        </div>
+      </div>
+      <div class="drop" id="dropBackfill">
+        <input type="file" id="inBackfill" accept=".xlsx,.xlsm" hidden>
+        <div class="drop-inner">
+          <div class="drop-icon">📄</div>
+          <strong>需补录的文件台账</strong>
+          <span class="drop-hint">点击选择或拖入 .xlsx</span>
+          <span class="drop-file" id="nameBackfill">未选择</span>
+        </div>
+      </div>
+    </div>
+
+    <details class="advanced">
+      <summary>补录选项</summary>
+      <div class="adv-body">
+        <div class="row">
+          <label for="inMaxPages">每份最多读取</label>
+          <input type="number" id="inMaxPages" value="3" min="1" max="10" style="width:76px">
+          <span class="tip">页；编号与日期一般出现在前几页</span>
+        </div>
+        <div class="row">
+          <label for="inMinConf">自动采纳门槛</label>
+          <select id="inMinConf">
+            <option value="高">仅高置信度</option>
+            <option value="中" selected>高 + 中</option>
+            <option value="低">全部（含低置信度）</option>
+          </select>
+          <span class="tip">低于门槛的只列出供人工判断，不自动填</span>
+        </div>
+        <p class="tip" id="pdfEnvTip">该功能依赖 Web Worker，请通过「启动.bat」或 <code>npm start</code> 以本地服务方式运行。</p>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button id="btnBackfill" class="btn btn-primary" disabled>开始分析</button>
+      <span id="backfillStatus" class="muted"></span>
+      <progress id="backfillProg" class="hidden" value="0" max="100"></progress>
+    </div>
+
+    <div id="backfillResult" class="hidden">
+      <div class="summary" id="backfillStats"></div>
+      <div class="actions">
+        <button id="btnApplyBackfill" class="btn btn-primary" disabled>应用并下载补录后的台账</button>
+        <button id="btnToggleLow" class="btn btn-ghost">显示低置信度项</button>
+      </div>
+      <div id="backfillTable"></div>
+    </div>
+  </section>
+
+  <!-- ================= 参数配置 ================= -->
+  <section id="panel-cfg" class="panel">
+    <div class="card-panel">
+      <div class="card-panel-head"><h3>项目与流程</h3><span class="tag">改完记得点保存</span></div>
+      <div class="card-panel-body">
+        <div class="row">
+          <label for="cfgProjectTitle">项目全称</label>
+          <input type="text" id="cfgProjectTitle" style="flex:1;min-width:280px">
+        </div>
+        <p class="tip">用于校验文件题名前缀；生成时也会用它补全题名。必须与档案系统里的项目名称完全一致。</p>
+      </div>
+    </div>
+
+    <div class="card-panel">
+      <div class="card-panel-head"><h3>固定值基准</h3><span class="tag">与导入模板一致，换项目时改这里</span></div>
+      <div class="card-panel-body">
+        <div class="section-title">文件台账固定列</div>
+        <div class="cfg-grid" id="cfgFile"></div>
+        <div class="section-title">案卷台账固定列</div>
+        <div class="cfg-grid" id="cfgJuan"></div>
+        <div class="actions">
+          <button class="btn btn-primary" id="btnSaveCfg">保存</button>
+          <button class="btn btn-ghost" id="btnResetCfg">恢复内置默认</button>
+          <button class="btn btn-ghost" id="btnExportCfg">导出 JSON</button>
+          <button class="btn btn-ghost" id="btnImportCfg">导入 JSON</button>
+          <input type="file" id="fileCfg" accept=".json" hidden>
+          <span class="hint" id="cfgHint"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-panel">
+      <div class="card-panel-head"><h3>分类号映射</h3><span class="tag">分类号 → 分类名称 / 保管期限 / 代码</span></div>
+      <div class="card-panel-body">
+        <div class="tw">
+          <table id="tblCat" class="cfg-table">
+            <thead><tr><th style="width:92px">分类号</th><th>分类名称</th><th style="width:112px">保管期限</th><th style="width:132px">保管期限代码</th><th style="width:70px"></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="actions">
+          <button class="btn btn-ghost" id="btnAddCat">新增分类号</button>
+          <span class="tip">生成时遇到未收录的分类号会直接中止并提示</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 规则清单 ================= -->
   <section id="panel-rules" class="panel">
     <p class="tip">共 <b id="ruleCount">0</b> 条规则，与 CLI 版（Python）口径一致。</p>
     <div id="ruleTable"></div>
   </section>
 </main>
 
-<dialog id="dlgHelp">
+<!-- ================= 弹窗：公告 ================= -->
+<dialog id="dlgNotice" class="dlg">
+  <div class="dlg-head">
+    <span id="noticeLevel" class="pill pill-INFO">公告</span>
+    <h2 id="noticeTitle">公告</h2>
+    <span class="dlg-date" id="noticeDate"></span>
+  </div>
+  <p class="dlg-summary" id="noticeSummary"></p>
+  <ul class="dlg-list" id="noticeItems"></ul>
+  <div class="dlg-foot">
+    <span class="dlg-foot-note" id="noticeNote"></span>
+    <button class="btn btn-primary" id="btnNoticeOk">我知道了</button>
+  </div>
+</dialog>
+
+<!-- ================= 弹窗：更新结果 ================= -->
+<dialog id="dlgUpdate" class="dlg">
+  <div class="dlg-head">
+    <span id="updLevel" class="pill pill-INFO">更新</span>
+    <h2 id="updTitle">检查更新</h2>
+  </div>
+  <p class="dlg-summary" id="updSummary"></p>
+  <ul class="dlg-list" id="updNotes"></ul>
+  <div class="dlg-foot">
+    <button class="btn btn-primary" id="btnUpdOk">关闭</button>
+  </div>
+</dialog>
+
+<!-- ================= 弹窗：PDF 实验提示 ================= -->
+<dialog id="dlgPdfWarn" class="dlg">
+  <div class="dlg-head">
+    <span class="pill pill-WARN">实验功能</span>
+    <h2>PDF 源补录说明</h2>
+  </div>
+  <ul class="dlg-list">
+    <li>本功能处于<b>实验阶段</b>，正在探索更好的处理顺序。</li>
+    <li>只能处理<b>少量</b>的编号、日期缺失问题。</li>
+    <li>如果整本台账的同类文件<b>都缺少</b>编号或日期，本功能<b>无法补全</b>。</li>
+    <li>也不推荐在处理顺序上把本步骤当作一个可靠的录入信息手段。</li>
+  </ul>
+  <div class="dlg-foot">
+    <button class="btn btn-primary" id="btnPdfWarnOk">已了解，继续</button>
+  </div>
+</dialog>
+
+<!-- ================= 弹窗：帮助 ================= -->
+<dialog id="dlgHelp" class="dlg">
   <h2>使用说明</h2>
   <ol class="help-list">
-    <li><b>检查台账</b>：放入文件台账与案卷台账，点「开始检查」。结果按规则分组，可定位到具体行号。</li>
-    <li><b>生成台账</b>：填 8 项要素的清单，自动补齐 60 余个字段并生成两本台账。</li>
-    <li><b>处理位置</b>：全部在你的浏览器内完成，文件不会上传到任何服务器。</li>
-    <li><b>已排版副本</b>：检查完成后可下载，格式为宋体 11 号、水平垂直居中、文本格式、自动换行。</li>
-    <li><b>PDF 校验</b>：需手动勾选并选择 PDF 文件，页数为估算值。</li>
+    <li><b>生成台账</b>：填 8 项要素的清单，自动补齐 60 余个字段并生成两本台账。属实验功能，务必人工复核。</li>
+    <li><b>检查台账</b>：放入两本台账，点「开始检查」。结果按规则分组，可定位到具体行号。</li>
+    <li><b>PDF 补录</b>：从 PDF 文字层推测缺失的编号与日期。需以本地服务方式运行。</li>
+    <li><b>参数配置</b>：改固定值基准、分类号映射、项目全称。保存在本机浏览器，检查与生成共用。</li>
+    <li><b>数据安全</b>：全部在你的浏览器内完成，文件不会上传到任何服务器。</li>
   </ol>
-  <form method="dialog"><button class="btn btn-primary">知道了</button></form>
+  <div class="dlg-foot"><button class="btn btn-primary" id="btnHelpOk">知道了</button></div>
 </dialog>
 
 <footer class="foot">
@@ -161,9 +339,12 @@ D0109-KJG01-0011-916-001	箱式变压器	30mm	光伏发电用变压器合格证	
 </footer>
 
 <script src="assets/vendor/exceljs.min.js"></script>
+<script src="assets/vendor/pdf.min.js"></script>
 <script src="assets/engine/data.js"></script>
+<script src="assets/notice.js"></script>
 <script src="assets/engine/engine.js"></script>
 <script src="assets/engine/excelio.js"></script>
+<script src="assets/engine/backfill.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>

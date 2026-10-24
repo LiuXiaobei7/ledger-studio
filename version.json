@@ -1,10 +1,11 @@
 {
   "name": "ledger-studio",
-  "version": "1.0.0",
-  "docNo": "LST-v1.0.0",
+  "version": "1.1.0",
+  "docNo": "LST-v1.1.0",
   "engineDocNo": "ENG-v1.0.0",
+  "backfillDocNo": "BFILL-v1.0.0",
   "releasedAt": "2026-10-24",
-  "notes": "首个公开版本：检查台账（24 条规则）、生成台账、规范化排版、离线可用",
+  "notes": "参数配置页、PDF 源补录（实验）、启动公告与自动更新检查、页签顺序调整",
   "download": {
     "zip": "https://github.com/USER/ledger-studio/releases/latest/download/ledger-studio.zip",
     "jsdelivr": "https://cdn.jsdelivr.net/gh/USER/ledger-studio@main/version.json"
