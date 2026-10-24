@@ -425,12 +425,31 @@ async function main() {
     const fileName = path.basename(zipPath);
     const sizeMB = (fs.statSync(zipPath).size / 1048576).toFixed(2);
     say('  ' + fileName + '（' + sizeMB + ' MB）正在上传…');
-    const up = await api.upload(release.upload_url.replace('{?name,label}', ''),
-      fs.readFileSync(zipPath), fileName);
+
+    async function putAsset() {
+      return api.upload(release.upload_url.replace('{?name,label}', ''),
+        fs.readFileSync(zipPath), fileName);
+    }
+
+    let up = await putAsset();
+
+    // 422 多半是同名附件已存在：删掉旧的再传一次
+    if (up.status === 422) {
+      const list = await api.call('GET', repoPath + '/releases/' + release.id + '/assets');
+      const old = (Array.isArray(list.json) ? list.json : []).find((a) => a.name === fileName);
+      if (old) {
+        say('  ' + C.dim + '同名附件已存在，先删除旧文件…' + C.x);
+        const del = await api.call('DELETE', repoPath + '/releases/assets/' + old.id);
+        if (del.status === 204 || del.status === 200) {
+          up = await putAsset();
+        } else {
+          warn('删除旧附件失败（HTTP ' + del.status + '）');
+        }
+      }
+    }
+
     if (up.status === 201 || up.status === 200) {
       ok('附件已上传');
-    } else if (up.status === 422) {
-      warn('同名附件已存在，跳过');
     } else {
       warn('上传失败（HTTP ' + up.status + '）');
       say('  ' + up.body.slice(0, 200));

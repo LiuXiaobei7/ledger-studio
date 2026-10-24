@@ -89,13 +89,15 @@ ledger-studio/
 ├── scripts/
 │   ├── 启动.bat                  Windows 一键启动
 │   ├── 更新.bat                  Windows 一键更新
+│   ├── 上传到GitHub.bat          Windows 一键发布
+│   ├── publish-to-github.js      发布脚本（建仓库/推送/发 Release）
 │   └── print-version.js          打印当前档号
 ├── test/run-tests.js             自测（47 项断言）
 ├── samples/                      示例台账
 └── docs/
     ├── 项目说明.md               架构与技术决策
     ├── 面试准备.md               项目复盘与面试问答
-    ├── GitHub发布步骤.md          首次上架与后续发版
+    ├── 发布流程.md               一键发布、改版本说明、网络排查
     ├── 更新与镜像指南.md          网络受限时的更新方案
     └── 内网环境使用指南.md        没有外网时怎么用、怎么更新
 ```
@@ -122,7 +124,7 @@ node test/run-tests.js
 1. **弹出公告**（顶部「公告」按钮可再次查看）
 2. **自动检查版本**，有新版本时顶部徽标变成「有新版本」
 
-当前 `assets/notice.js` 的 `mode` 是 `demo`，不会联网，直接展示内置的示例公告与版本信息——因为项目还没发布到 GitHub。
+当前 `assets/notice.js` 的 `mode` 是 `demo`，不会联网，直接展示内置的示例公告与版本信息。改成 `live` 并配好 `endpoints` 后才会走真实请求。
 发布后把它改成 `live`，并把 `endpoints` 里的 `USER` 换成实际用户名，就会走真实的三级降级链：
 
 ```
