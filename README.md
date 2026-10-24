@@ -114,6 +114,29 @@ node test/run-tests.js
 
 ---
 
+## 发布到 GitHub
+
+双击 `scripts/上传到GitHub.bat`，粘贴一次令牌，剩下的全自动。
+
+它按顺序做七件事：**验证令牌 → 建仓库（没有才建）→ 推送代码 → 打标签 → 建 Release → 上传 zip → 清掉本地的令牌痕迹**。
+
+```bash
+# 等价的命令行方式
+node scripts/publish-to-github.js                 # 交互式粘贴令牌
+node scripts/publish-to-github.js --token ghp_xxx  # 直接给
+node scripts/publish-to-github.js --no-proxy       # 网络好的时候跳过代理
+```
+
+令牌也可以存成项目根目录的 `.github-token` 文件，之后就不用每次输入（该文件已在 `.gitignore` 中排除）。
+
+**网络要求**：这台机器上 `github.com` 必须走 `127.0.0.1:7897`，已通过
+`git config --global http.https://github.com/.proxy` 固定，只影响 GitHub，不影响其他仓库。
+`HTTP_PROXY` 环境变量指向的 `65002` 端口连不上 GitHub，脚本自己用 7897 建隧道，绕开它。
+
+详细步骤（含令牌怎么拿、报错对照表）见 [`docs/上传到GitHub-一步一步.md`](docs/上传到GitHub-一步一步.md)。
+
+---
+
 ## 启动公告与版本检查
 
 每次打开页面会：

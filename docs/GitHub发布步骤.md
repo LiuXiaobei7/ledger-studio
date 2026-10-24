@@ -1,10 +1,45 @@
 # 发布到 GitHub（首次上架 + 后续发版）
 
+> **不想敲命令？** 直接看 [`上传到GitHub-一步一步.md`](./上传到GitHub-一步一步.md)，
+> 那里是双击 bat、粘贴令牌就完事的版本，本文是它的手动/原理版。
+
 > 当前仓库已在本地初始化并完成首次提交（commit `4b0103c`），只差推送到远端。
 
 ---
 
-## 零、仓库现在的状态
+## 零、先解决网络（这一步跳过会导致必然失败）
+
+这台机器上存在两个代理，命令行默认走了错的那个：
+
+| 代理 | 用途 | 能否访问 github.com |
+| --- | --- | --- |
+| `127.0.0.1:7897` | 系统代理，浏览器使用 | ✅ 可以 |
+| `127.0.0.1:65002` | `HTTP_PROXY` / `HTTPS_PROXY` 环境变量 | ❌ 超时 |
+
+诊断命令（`HTTP 200` 才算通）：
+
+```bash
+curl -sS -m 10 -x http://127.0.0.1:7897 -o /dev/null -w "%{http_code}\n" https://github.com
+```
+
+已做的修复（**只作用于 github.com，不影响其他仓库**）：
+
+```bash
+git config --global http.https://github.com/.proxy http://127.0.0.1:7897
+git config --global https.https://github.com/.proxy http://127.0.0.1:7897
+```
+
+验证：
+
+```bash
+git ls-remote https://github.com/octocat/Hello-World.git HEAD
+```
+
+能打印出一串 commit id 就说明通了。
+
+---
+
+## 零之一、仓库现在的状态
 
 本地已经建好仓库并提交了 4 次，**只差推送到远端**：
 

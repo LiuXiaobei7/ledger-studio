@@ -5,6 +5,40 @@
 
 ---
 
+## LST-v1.1.4 · 2026-10-24
+
+**一键发布到 GitHub + 修复本机代理导致的必然失败**
+
+### 新增
+
+- `scripts/publish-to-github.js`：零依赖发布脚本，一条命令走完
+  1. 验证令牌并读取账号（`GET /user`）
+  2. 仓库不存在则自动创建（`POST /user/repos`），不需要打开网页
+  3. 推送代码（推送 URL 临时内联令牌，**结束后自动还原**，不在 `.git/config` 留痕）
+  4. 打注标签 `v<版本>`
+  5. 创建 Release，正文自动截取本 CHANGELOG 对应小节
+  6. 上传 `ledger-studio-v<版本>.zip` 作为 Release 附件
+- `scripts/上传到GitHub.bat`：双击运行，找不到 `node` 时自动去 `.workbuddy/binaries` 里找
+- `docs/上传到GitHub-一步一步.md`：面向非开发者的操作说明，含报错对照表
+- 支持 `.github-token` 文件保存令牌；该文件与 `*-token` 已加入 `.gitignore`
+
+### 修复
+
+- **本机 `github.com` 必然超时的根因**：系统代理是 `127.0.0.1:7897`（可用），但
+  `HTTP_PROXY` / `HTTPS_PROXY` 环境变量指向 `127.0.0.1:65002`（访问 GitHub 超时），
+  命令行工具全部走了后者。
+  - 处置：只对 `github.com` 固定代理，
+    `git config --global http.https://github.com/.proxy http://127.0.0.1:7897`，
+    不影响其他仓库
+  - 脚本内部自己实现 CONNECT 隧道（`net` + `tls`），绕过环境变量，不依赖 `https-proxy-agent`
+
+### 工程
+
+- 代理隧道验证：假令牌返回 `401 令牌无效`，说明 API 链路完全可用
+- `git ls-remote https://github.com/octocat/Hello-World.git HEAD` 可正常返回 commit id
+
+---
+
 ## LST-v1.1.3 · 2026-10-24
 
 **彩蛋可读性与新增第二个彩蛋**

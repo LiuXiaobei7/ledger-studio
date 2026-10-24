@@ -1,11 +1,11 @@
 {
   "name": "ledger-studio",
-  "version": "1.1.3",
-  "docNo": "LST-v1.1.3",
+  "version": "1.1.4",
+  "docNo": "LST-v1.1.4",
   "engineDocNo": "ENG-v1.0.0",
   "backfillDocNo": "BFILL-v1.0.0",
   "releasedAt": "2026-10-24",
-  "notes": "彩蛋调整：按键横排、去掉进度点、透明度降低；新增秘籍 ↑→↓↓↓ 弹出彩蛋弹窗",
+  "notes": "新增一键发布脚本（自动建仓库/推送/打标签/发 Release）；修复 github.com 代理配置",
   "download": {
     "zip": "https://github.com/USER/ledger-studio/releases/latest/download/ledger-studio.zip",
     "jsdelivr": "https://cdn.jsdelivr.net/gh/USER/ledger-studio@main/version.json"

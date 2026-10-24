@@ -6,7 +6,7 @@
   'use strict';
 
   var E = LedgerEngine;
-  var APP_DOC_NO = 'LST-v1.1.3';
+  var APP_DOC_NO = 'LST-v1.1.4';
   var CFG_KEY = 'ledger-studio-cfg-v1';
 
   var $ = function (id) { return document.getElementById(id); };

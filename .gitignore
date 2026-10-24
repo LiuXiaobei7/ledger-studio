@@ -22,3 +22,7 @@ dist/
 
 # 本地覆盖配置
 config.local.json
+
+# 发布用令牌，绝对不能提交
+.github-token
+*-token
