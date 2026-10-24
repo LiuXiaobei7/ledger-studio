@@ -206,4 +206,4 @@ jsDelivr → raw.githubusercontent.com → gh-proxy
 
 ## 许可
 
-MIT
+MIT，但是任何人想用就直接用吧，就是随手写的一个小工具，你要是商用或者搬进自己的软件里那我就有点瞧不起你了
