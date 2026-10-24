@@ -4,6 +4,45 @@
 
 ---
 
+## 零、仓库现在的状态
+
+本地已经建好仓库并提交了 4 次，**只差推送到远端**：
+
+```
+90aa746  feat: v1.1.1 规则清单改为隐藏页签 + 使用说明彩蛋
+88e71fb  feat: v1.1.0 参数配置 + PDF补录 + 启动公告
+d687952  docs: 补充 GitHub 发布步骤
+4b0103c  feat: 档案台账工作台 v1.0.0
+```
+
+所以不用 `git init`、不用 `git add`，**从下面第 2 步开始做就行**。
+
+### 最省事的三步（照抄）
+
+```bash
+# 1) 先去 https://github.com/new 建一个空的 public 仓库，名字叫 ledger-studio，什么都不要勾选
+#    建完记下地址，形如 https://github.com/你的用户名/ledger-studio.git
+
+# 2) 在项目目录里执行
+cd C:/Users/liuxi_0wlp8qf/WorkBuddy/2026-10-23-11-45-09/ledger-studio
+git remote add origin https://github.com/你的用户名/ledger-studio.git
+git branch -M main
+git push -u origin main
+
+# 3) 打标签（可选，但发 Release 需要）
+git tag -a v1.1.1 -m "LST-v1.1.1"
+git push origin v1.1.1
+```
+
+第 2 步会弹认证：
+
+- 用户名：你的 GitHub 用户名
+- 密码：**不是账号密码**，要填 Personal Access Token
+  - 去 https://github.com/settings/tokens → Generate new token (classic)
+  - 勾 `repo` 权限 → 生成 → 复制（只显示一次）
+
+---
+
 ## 一、首次上架
 
 ### 步骤 1：在 GitHub 建空仓库
