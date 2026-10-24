@@ -6,7 +6,7 @@
   'use strict';
 
   var E = LedgerEngine;
-  var APP_DOC_NO = 'LST-v1.1.1';
+  var APP_DOC_NO = 'LST-v1.1.2';
   var CFG_KEY = 'ledger-studio-cfg-v1';
 
   var $ = function (id) { return document.getElementById(id); };
@@ -1001,7 +1001,12 @@
   $('btnHelpOk').addEventListener('click', function () { $('dlgHelp').close(); });
 
   $('btnUpdate').addEventListener('click', function () { doUpdateCheck(false); });
-  $('btnHelp').addEventListener('click', function () { $('dlgHelp').showModal(); });
+  $('btnHelp').addEventListener('click', function () {
+    $('dlgHelp').showModal();
+    // 每次打开始终从顶部开始，避免上次滚到底后按键直接露出来
+    $('dlgHelp').scrollTop = 0;
+    requestAnimationFrame(function () { $('dlgHelp').scrollTop = 0; });
+  });
 
   /* ---------------- 规则清单 ---------------- */
 
@@ -1027,15 +1032,21 @@
 
   function unlockRules(silent) {
     if (rulesUnlocked) {
-      if (!silent) $('dlgKonami').showModal();
+      if (!silent) goRules();
       return;
     }
     rulesUnlocked = true;
     $('tabRules').classList.remove('tab-hidden');
     try { sessionStorage.setItem('ledger-rules-unlocked', '1'); } catch (e) { /* 忽略 */ }
-    var note = $('konamiNote');
-    if (note) { note.textContent = '已解锁'; note.className = 'konami-note ok'; }
-    if (!silent) $('dlgKonami').showModal();
+    if (!silent) goRules();
+  }
+
+  /** 解锁后的跳转：关掉使用说明 → 切到规则清单 → 顶部显示提示 */
+  function goRules() {
+    if ($('dlgHelp').open) $('dlgHelp').close();
+    switchTab('rules');
+    $('rulesSecret').classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function konamiInput(key) {
@@ -1067,7 +1078,9 @@
     });
   });
 
-  $('btnKonamiOk').addEventListener('click', function () { $('dlgKonami').close(); });
+  $('btnCloseSecret').addEventListener('click', function () {
+    $('rulesSecret').classList.add('hidden');
+  });
 
   /* ---------------- 启动 ---------------- */
 

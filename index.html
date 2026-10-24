@@ -270,6 +270,17 @@ D0109-KJG01-0011-916-001	箱式变压器	30mm	光伏发电用变压器合格证	
 
   <!-- ================= 规则清单 ================= -->
   <section id="panel-rules" class="panel">
+    <div id="rulesSecret" class="alert alert-info hidden">
+      <div class="alert-body">
+        <strong>你找到了一条隐藏路径</strong>
+        <ul>
+          <li>如果你不知道你是怎么到这里的，就请联系 git 项目负责人</li>
+          <li>增删规则也是联系负责人</li>
+          <li>顺带一提，30 条命没到账 ；）</li>
+        </ul>
+      </div>
+      <button class="alert-close" id="btnCloseSecret" title="关闭">×</button>
+    </div>
     <p class="tip">共 <b id="ruleCount">0</b> 条规则，与 CLI 版（Python）口径一致。</p>
     <div id="ruleTable"></div>
   </section>
@@ -346,42 +357,21 @@ D0109-KJG01-0011-916-001	箱式变压器	30mm	光伏发电用变压器合格证	
   </dl>
 
   <div class="konami-wrap">
-    <span class="konami-hint">—</span>
+    <span class="konami-hint">·</span>
     <div class="konami-pad" id="konamiPad">
-      <div class="kpad-left">
-        <button class="kbtn k-up" data-konami="up" aria-label="up">↑</button>
-        <button class="kbtn k-left" data-konami="left" aria-label="left">←</button>
-        <button class="kbtn k-right" data-konami="right" aria-label="right">→</button>
-        <button class="kbtn k-down" data-konami="down" aria-label="down">↓</button>
-      </div>
-      <div class="kpad-mid">
-        <button class="kbtn k-mini" data-konami="select">Select</button>
-        <button class="kbtn k-mini" data-konami="start">Start</button>
-      </div>
-      <div class="kpad-right">
-        <button class="kbtn k-ab k-b" data-konami="b">B</button>
-        <button class="kbtn k-ab k-a" data-konami="a">A</button>
-      </div>
+      <button class="kbtn" data-konami="up" aria-label="上">↑</button>
+      <button class="kbtn" data-konami="down" aria-label="下">↓</button>
+      <button class="kbtn" data-konami="left" aria-label="左">←</button>
+      <button class="kbtn" data-konami="right" aria-label="右">→</button>
+      <button class="kbtn k-wide" data-konami="select">Select</button>
+      <button class="kbtn k-wide" data-konami="start">Start</button>
+      <button class="kbtn" data-konami="b">B</button>
+      <button class="kbtn" data-konami="a">A</button>
     </div>
     <span class="konami-note" id="konamiNote"></span>
   </div>
 
   <div class="dlg-foot"><button class="btn btn-primary" id="btnHelpOk">知道了</button></div>
-</dialog>
-
-<!-- ================= 弹窗：彩蛋 ================= -->
-<dialog id="dlgKonami" class="dlg">
-  <div class="dlg-head">
-    <span class="pill pill-INFO">？</span>
-    <h2>你找到了一条隐藏路径</h2>
-  </div>
-  <p class="dlg-summary">「规则清单」标签页已解锁，本次会话内可用。</p>
-  <ul class="dlg-list">
-    <li>如果你不知道你是怎么到这里的，就请联系 git 项目负责人</li>
-    <li>增删规则也是联系负责人</li>
-    <li>顺带一提，30 条命没到账 ；）</li>
-  </ul>
-  <div class="dlg-foot"><button class="btn btn-primary" id="btnKonamiOk">好</button></div>
 </dialog>
 
 <footer class="foot">

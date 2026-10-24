@@ -1,11 +1,11 @@
 {
   "name": "ledger-studio",
-  "version": "1.1.1",
-  "docNo": "LST-v1.1.1",
+  "version": "1.1.2",
+  "docNo": "LST-v1.1.2",
   "engineDocNo": "ENG-v1.0.0",
   "backfillDocNo": "BFILL-v1.0.0",
   "releasedAt": "2026-10-24",
-  "notes": "规则清单改为隐藏页签（解锁方式见 CHANGELOG）；使用说明补充常见问题",
+  "notes": "修正隐藏页签彩蛋：说明弹窗复位到顶部、按键改单列并置于折叠线下、解锁后自动关闭说明并跳转规则清单",
   "download": {
     "zip": "https://github.com/USER/ledger-studio/releases/latest/download/ledger-studio.zip",
     "jsdelivr": "https://cdn.jsdelivr.net/gh/USER/ledger-studio@main/version.json"

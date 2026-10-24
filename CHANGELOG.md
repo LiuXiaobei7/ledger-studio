@@ -5,6 +5,38 @@
 
 ---
 
+## LST-v1.1.2 · 2026-10-24
+
+**修正隐藏页签彩蛋的三处体验问题**
+
+### 修复
+
+- **打开说明就看见按键** → 弹窗高度收紧到 `min(68vh, 560px)`，并补足内容，使按键位于折叠线以下，必须往下滚才看得到
+- **滚动条停在底部** → 每次点「使用说明」强制 `scrollTop = 0`，始终从标题开始读
+- **按键排列** → 从手柄式的三簇布局（十字方向盘 + Select/Start + A/B）改为**单列平铺**，八个键纵向排列：↑ ↓ ← → Select Start B A
+
+### 调整
+
+- 解锁后的反馈方式改为：**自动关闭使用说明 → 直接切到「规则清单」页 → 在页面顶部显示提示**
+  - 提示内容：如果你不知道你是怎么到这里的，就请联系 git 项目负责人；增删规则也是联系负责人；顺带一提，30 条命没到账 ；）
+  - 提示是页内横幅，可点 × 关掉，不再是独立弹窗
+- 移除原来的「你找到了一条隐藏路径」独立弹窗
+
+### 验证
+
+无头 Chrome 探针结果：
+
+```
+scrollTopOnOpen=0        scrollable=true
+padBelowFoldOnOpen=true  (padTop=835 > dlgBottom=628)
+padBtns=8                padDirection=column
+padVisibleAfterScroll=true
+helpOpenAfter=false      rulesPanelActive=true
+secretVisible=true       tabVisible=true
+```
+
+---
+
 ## LST-v1.1.1 · 2026-10-24
 
 **规则清单改为隐藏页签**
