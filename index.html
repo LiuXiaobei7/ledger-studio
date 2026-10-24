@@ -28,7 +28,7 @@
   <button class="tab" data-tab="check">检查台账</button>
   <button class="tab" data-tab="pdf">PDF 补录<span class="tab-badge">实验</span></button>
   <button class="tab" data-tab="cfg">参数配置</button>
-  <button class="tab" data-tab="rules">规则清单</button>
+  <button class="tab tab-hidden" data-tab="rules" id="tabRules">规则清单</button>
 </nav>
 
 <main>
@@ -321,7 +321,7 @@ D0109-KJG01-0011-916-001	箱式变压器	30mm	光伏发电用变压器合格证	
 </dialog>
 
 <!-- ================= 弹窗：帮助 ================= -->
-<dialog id="dlgHelp" class="dlg">
+<dialog id="dlgHelp" class="dlg dlg-scroll">
   <h2>使用说明</h2>
   <ol class="help-list">
     <li><b>生成台账</b>：填 8 项要素的清单，自动补齐 60 余个字段并生成两本台账。属实验功能，务必人工复核。</li>
@@ -330,7 +330,58 @@ D0109-KJG01-0011-916-001	箱式变压器	30mm	光伏发电用变压器合格证	
     <li><b>参数配置</b>：改固定值基准、分类号映射、项目全称。保存在本机浏览器，检查与生成共用。</li>
     <li><b>数据安全</b>：全部在你的浏览器内完成，文件不会上传到任何服务器。</li>
   </ol>
+
+  <h3 class="help-sub">常见问题</h3>
+  <dl class="faq">
+    <dt>生成的台账能直接导入档案系统吗？</dt>
+    <dd>可以，列名与列序与原导入模板完全一致。但生成属实验功能，建议先用「检查台账」自检一遍再导入。</dd>
+    <dt>为什么 PDF 补录用不了？</dt>
+    <dd>该功能依赖 Web Worker，必须以本地服务方式打开（双击 <code>scripts/启动.bat</code> 或执行 <code>npm start</code>）。直接双击 HTML 时浏览器会禁止 Worker。</dd>
+    <dt>换项目了，固定值怎么改？</dt>
+    <dd>到「参数配置」页改固定值基准与分类号映射，保存后检查与生成都会用新值。也可导出 JSON 带到别的机器导入。</dd>
+    <dt>配置在别的电脑上不生效？</dt>
+    <dd>配置存在浏览器本地（localStorage），按域名隔离。换机器请用「导出 JSON / 导入 JSON」。</dd>
+    <dt>检查报了 0 错误，是不是没检查？</dt>
+    <dd>不是。规则清单里可以看到实际执行的全部规则；报告里 0 错误代表这些规则都通过了。</dd>
+  </dl>
+
+  <div class="konami-wrap">
+    <span class="konami-hint">—</span>
+    <div class="konami-pad" id="konamiPad">
+      <div class="kpad-left">
+        <button class="kbtn k-up" data-konami="up" aria-label="up">↑</button>
+        <button class="kbtn k-left" data-konami="left" aria-label="left">←</button>
+        <button class="kbtn k-right" data-konami="right" aria-label="right">→</button>
+        <button class="kbtn k-down" data-konami="down" aria-label="down">↓</button>
+      </div>
+      <div class="kpad-mid">
+        <button class="kbtn k-mini" data-konami="select">Select</button>
+        <button class="kbtn k-mini" data-konami="start">Start</button>
+      </div>
+      <div class="kpad-right">
+        <button class="kbtn k-ab k-b" data-konami="b">B</button>
+        <button class="kbtn k-ab k-a" data-konami="a">A</button>
+      </div>
+    </div>
+    <span class="konami-note" id="konamiNote"></span>
+  </div>
+
   <div class="dlg-foot"><button class="btn btn-primary" id="btnHelpOk">知道了</button></div>
+</dialog>
+
+<!-- ================= 弹窗：彩蛋 ================= -->
+<dialog id="dlgKonami" class="dlg">
+  <div class="dlg-head">
+    <span class="pill pill-INFO">？</span>
+    <h2>你找到了一条隐藏路径</h2>
+  </div>
+  <p class="dlg-summary">「规则清单」标签页已解锁，本次会话内可用。</p>
+  <ul class="dlg-list">
+    <li>如果你不知道你是怎么到这里的，就请联系 git 项目负责人</li>
+    <li>增删规则也是联系负责人</li>
+    <li>顺带一提，30 条命没到账 ；）</li>
+  </ul>
+  <div class="dlg-foot"><button class="btn btn-primary" id="btnKonamiOk">好</button></div>
 </dialog>
 
 <footer class="foot">

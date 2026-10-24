@@ -1,11 +1,11 @@
 {
   "name": "ledger-studio",
-  "version": "1.1.0",
-  "docNo": "LST-v1.1.0",
+  "version": "1.1.1",
+  "docNo": "LST-v1.1.1",
   "engineDocNo": "ENG-v1.0.0",
   "backfillDocNo": "BFILL-v1.0.0",
   "releasedAt": "2026-10-24",
-  "notes": "参数配置页、PDF 源补录（实验）、启动公告与自动更新检查、页签顺序调整",
+  "notes": "规则清单改为隐藏页签（解锁方式见 CHANGELOG）；使用说明补充常见问题",
   "download": {
     "zip": "https://github.com/USER/ledger-studio/releases/latest/download/ledger-studio.zip",
     "jsdelivr": "https://cdn.jsdelivr.net/gh/USER/ledger-studio@main/version.json"

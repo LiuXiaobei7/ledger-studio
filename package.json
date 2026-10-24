@@ -1,7 +1,7 @@
 {
   "name": "ledger-studio",
-  "version": "1.1.0",
-  "docNo": "LST-v1.1.0",
+  "version": "1.1.1",
+  "docNo": "LST-v1.1.1",
   "description": "档案台账工作台 —— 浏览器内生成、检查与补录《文件台账》《案卷台账》，数据不出本机",
   "keywords": [
     "archive",

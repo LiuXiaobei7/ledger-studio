@@ -6,7 +6,7 @@
   'use strict';
 
   var E = LedgerEngine;
-  var APP_DOC_NO = 'LST-v1.1.0';
+  var APP_DOC_NO = 'LST-v1.1.1';
   var CFG_KEY = 'ledger-studio-cfg-v1';
 
   var $ = function (id) { return document.getElementById(id); };
@@ -1016,6 +1016,59 @@
   rt += '</tbody></table>';
   $('ruleTable').innerHTML = rt;
 
+  /* ==================================================================
+   * 彩蛋：使用说明里藏着的手柄
+   * 顺序正确后解锁「规则清单」标签页，本次会话内有效
+   * ================================================================== */
+
+  var KONAMI = ['up', 'up', 'down', 'down', 'left', 'right', 'left', 'right', 'b', 'a', 'b', 'a'];
+  var konamiPos = 0;
+  var rulesUnlocked = false;
+
+  function unlockRules(silent) {
+    if (rulesUnlocked) {
+      if (!silent) $('dlgKonami').showModal();
+      return;
+    }
+    rulesUnlocked = true;
+    $('tabRules').classList.remove('tab-hidden');
+    try { sessionStorage.setItem('ledger-rules-unlocked', '1'); } catch (e) { /* 忽略 */ }
+    var note = $('konamiNote');
+    if (note) { note.textContent = '已解锁'; note.className = 'konami-note ok'; }
+    if (!silent) $('dlgKonami').showModal();
+  }
+
+  function konamiInput(key) {
+    if (rulesUnlocked) return;
+    if (key === KONAMI[konamiPos]) {
+      konamiPos++;
+    } else {
+      konamiPos = (key === KONAMI[0]) ? 1 : 0;
+    }
+    var note = $('konamiNote');
+    if (note) {
+      if (konamiPos >= KONAMI.length) {
+        konamiPos = 0;
+        unlockRules(false);
+        return;
+      }
+      note.textContent = konamiPos > 0
+        ? new Array(konamiPos + 1).join('●')
+        : '';
+    }
+  }
+
+  $$('#konamiPad .kbtn').forEach(function (b) {
+    b.addEventListener('click', function (e) {
+      e.preventDefault();
+      b.classList.add('pressed');
+      setTimeout(function () { b.classList.remove('pressed'); }, 130);
+      konamiInput(b.getAttribute('data-konami'));
+    });
+  });
+
+  $('btnKonamiOk').addEventListener('click', function () { $('dlgKonami').close(); });
+
   /* ---------------- 启动 ---------------- */
 
   cfgLoad();
@@ -1026,6 +1079,11 @@
   // 生成页是默认页，启动即显示一次提示（本次加载只显示一次）
   buildAlertShown = true;
   $('buildAlert').classList.remove('hidden');
+
+  // 本会话内已解锁过规则清单则直接显示
+  try {
+    if (sessionStorage.getItem('ledger-rules-unlocked') === '1') unlockRules(true);
+  } catch (e) { /* 隐私模式忽略 */ }
 
   bootNoticeAndUpdate();
   checkPdfEnv();
