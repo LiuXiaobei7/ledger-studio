@@ -27,7 +27,9 @@ const CFG = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8'))
 const VERSION = CFG.version;
 const DOC_NO = CFG.docNo;
 const TAG = 'v' + VERSION;
-const DEFAULT_PROXY = 'http://127.0.0.1:7897';
+
+// 常见本地代理端口，按顺序探测，第一个能连上 GitHub 的就用
+const PROXY_PORTS = ['7897', '7890', '10809', '10808', '1080', '8889'];
 
 const C = {
   ok: '\x1b[32m', warn: '\x1b[33m', err: '\x1b[31m',
@@ -42,21 +44,22 @@ const step = (n, s) => console.log('\n' + C.b + '[' + n + '] ' + s + C.x);
 /* ---------------- 参数 ---------------- */
 
 function parseArgs(argv) {
-  const a = { token: '', repo: 'ledger-studio', proxy: DEFAULT_PROXY, noProxy: false, zip: '' };
+  const a = { token: '', repo: 'ledger-studio', proxy: 'auto', noProxy: false, zip: '', keepRelease: false };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
     if (k === '--token') a.token = argv[++i] || '';
     else if (k === '--repo') a.repo = argv[++i] || 'ledger-studio';
-    else if (k === '--proxy') a.proxy = argv[++i] || DEFAULT_PROXY;
+    else if (k === '--proxy') a.proxy = argv[++i] || 'auto';
     else if (k === '--no-proxy') a.noProxy = true;
     else if (k === '--zip') a.zip = argv[++i] || '';
+    else if (k === '--keep-release') a.keepRelease = true;
   }
   return a;
 }
 
 /* ---------------- 带代理的 HTTPS ---------------- */
 
-function connectViaProxy(proxyUrl, host, port) {
+function connectViaProxy(proxyUrl, host, port, timeoutMs) {
   return new Promise((resolve, reject) => {
     const p = new URL(proxyUrl);
     const req = http.request({
@@ -65,7 +68,7 @@ function connectViaProxy(proxyUrl, host, port) {
       method: 'CONNECT',
       path: host + ':' + port,
       headers: { Host: host + ':' + port },
-      timeout: 15000
+      timeout: timeoutMs || 15000
     });
     req.on('connect', (res, socket) => {
       if (res.statusCode !== 200) {
@@ -78,6 +81,19 @@ function connectViaProxy(proxyUrl, host, port) {
     req.on('timeout', () => req.destroy(new Error('代理连接超时')));
     req.end();
   });
+}
+
+/** 依次试探常见本地代理端口，返回第一个能连上 github.com 的；都不行返回 ''（直连） */
+async function detectProxy() {
+  for (const port of PROXY_PORTS) {
+    const url = 'http://127.0.0.1:' + port;
+    try {
+      const sock = await connectViaProxy(url, 'github.com', 443, 2500);
+      sock.destroy();
+      return url;
+    } catch (e) { /* 换下一个 */ }
+  }
+  return '';
 }
 
 function tlsViaProxy(proxyUrl, host) {
@@ -219,6 +235,19 @@ async function main() {
   }
   ok('本地仓库正常');
 
+  /* 0.1 网络代理 */
+  if (cfg.noProxy) {
+    cfg.proxy = '';
+    say('  ' + C.dim + '按参数要求直连，不使用代理' + C.x);
+  } else if (cfg.proxy === 'auto') {
+    process.stdout.write('  探测本地代理… ');
+    cfg.proxy = await detectProxy();
+    if (cfg.proxy) say(C.ok + '使用 ' + cfg.proxy + C.x);
+    else say(C.warn + '未发现可用代理，将直连' + C.x);
+  } else {
+    say('  ' + C.dim + '使用指定代理 ' + cfg.proxy + C.x);
+  }
+
   /* 1. token */
   step(1, '获取访问令牌');
   let token = cfg.token || process.env.GITHUB_TOKEN || '';
@@ -319,8 +348,9 @@ async function main() {
     say('  ' + msg.split('\n').slice(0, 6).join('\n  '));
     if (/proxy|timed out|Could not resolve/i.test(msg)) {
       say('');
-      say('  ' + C.warn + '看起来是网络问题。请确认代理软件开着，端口是 7897。' + C.x);
-      say('  如果端口不是 7897，重新运行并加参数：--proxy http://127.0.0.1:你的端口');
+      say('  ' + C.warn + '看起来是网络问题，命令行连不上 GitHub。' + C.x);
+      say('  确认代理软件已开启，然后用 --proxy 指定端口重新运行：');
+      say('  node scripts/publish-to-github.js --proxy http://127.0.0.1:你的端口');
     }
     git(['remote', 'set-url', 'origin', cleanUrl]);
     process.exit(1);
@@ -347,7 +377,21 @@ async function main() {
 
   if (exist.status === 200) {
     release = exist.json;
-    warn('该标签已有 Release，跳过创建');
+    if (cfg.keepRelease) {
+      warn('该 Release 已存在，按参数要求保留原说明');
+    } else {
+      // 已存在则把 CHANGELOG 的最新内容同步过去，方便改完说明重跑一次即生效
+      const patched = await api.call('PATCH', repoPath + '/releases/' + release.id, {
+        name: DOC_NO,
+        body: readChangelogSection()
+      });
+      if (patched.status === 200) {
+        release = patched.json;
+        ok('Release 已存在，说明已按 CHANGELOG 同步');
+      } else {
+        warn('同步 Release 说明失败（HTTP ' + patched.status + '），保留原说明');
+      }
+    }
     say('  ' + release.html_url);
   } else {
     const created = await api.call('POST', repoPath + '/releases', {

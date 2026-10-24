@@ -30,7 +30,8 @@ exit /b %RC%
 
 :NONODE
 echo   没有找到 Node.js，无法运行上传脚本。
-echo   你可以在 WorkBuddy 里直接让我帮你传，把令牌发我即可。
+echo   请在该目录手动打开终端，执行：
+echo     node scripts\publish-to-github.js
 echo.
 pause
 exit /b 1

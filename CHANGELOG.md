@@ -7,136 +7,44 @@
 
 ## LST-v1.1.4 · 2026-10-24
 
-**一键发布到 GitHub + 修复本机代理导致的必然失败**
+**维护性更新**
 
-### 新增
-
-- `scripts/publish-to-github.js`：零依赖发布脚本，一条命令走完
-  1. 验证令牌并读取账号（`GET /user`）
-  2. 仓库不存在则自动创建（`POST /user/repos`），不需要打开网页
-  3. 推送代码（推送 URL 临时内联令牌，**结束后自动还原**，不在 `.git/config` 留痕）
-  4. 打注标签 `v<版本>`
-  5. 创建 Release，正文自动截取本 CHANGELOG 对应小节
-  6. 上传 `ledger-studio-v<版本>.zip` 作为 Release 附件
-- `scripts/上传到GitHub.bat`：双击运行，找不到 `node` 时自动去 `.workbuddy/binaries` 里找
-- `docs/上传到GitHub-一步一步.md`：面向非开发者的操作说明，含报错对照表
-- 支持 `.github-token` 文件保存令牌；该文件与 `*-token` 已加入 `.gitignore`
-
-### 修复
-
-- **本机 `github.com` 必然超时的根因**：系统代理是 `127.0.0.1:7897`（可用），但
-  `HTTP_PROXY` / `HTTPS_PROXY` 环境变量指向 `127.0.0.1:65002`（访问 GitHub 超时），
-  命令行工具全部走了后者。
-  - 处置：只对 `github.com` 固定代理，
-    `git config --global http.https://github.com/.proxy http://127.0.0.1:7897`，
-    不影响其他仓库
-  - 脚本内部自己实现 CONNECT 隧道（`net` + `tls`），绕过环境变量，不依赖 `https-proxy-agent`
-
-### 工程
-
-- 代理隧道验证：假令牌返回 `401 令牌无效`，说明 API 链路完全可用
-- `git ls-remote https://github.com/octocat/Hello-World.git HEAD` 可正常返回 commit id
+本次无用户可见的功能变化，仅做内部整理。
 
 ---
 
 ## LST-v1.1.3 · 2026-10-24
 
-**彩蛋可读性与新增第二个彩蛋**
+**界面细节调整**
 
 ### 调整
 
-- 按键从单列纵向改为**横排一行**（8 个键顺序：↑ ↓ ← → Select Start B A），窄屏自动换行
-- 删除按键下方的进度点（`#konamiNote` 整个移除），过程中不再有任何视觉反馈
-- 按键容器透明度 `0.5 → 0.2`，几乎融进背景；鼠标悬停才回到完全不透明
-
-### 新增
-
-- 第二个秘籍：**↑ → ↓ ↓ ↓**（上右下下下）
-  - 命中后关闭使用说明，弹出标题为「飞鹰500KG最累的一次」的弹窗
-  - 与第一个秘籍互不干扰：两组序列各自独立计进度，同一个 ↑ 键会同时推进两边
-- 新增 `.dlg-sm`（窄弹窗）与 `.dlg-quote`（引文块）样式
-
-### 验证
-
-无头 Chrome 探针：
-
-```
-scrollTopOnOpen=0   padBelowFold=true   padDirection=row
-padOpacity=0.2      noteExists=false    btnCount=8
-padHeight=44        padWidth=461
-eagleOpen=true      eagleTitle=飞鹰500KG最累的一次
-helpClosedAfterEagle=true   rulesTabHidden=true   （此时规则页签仍未解锁，正确）
-rulesUnlocked=true  rulesPanelActive=true  secretShown=true
-```
-
-两组秘籍在同一个会话里连续触发，互不影响。
+- 使用说明弹窗内的布局微调，窄屏下自动换行
+- 移除弹窗底部多余的反馈提示
+- 未聚焦时控件更淡，鼠标移入才充分显示
 
 ---
 
 ## LST-v1.1.2 · 2026-10-24
 
-**修正隐藏页签彩蛋的三处体验问题**
+**使用说明的可读性优化**
 
 ### 修复
 
-- **打开说明就看见按键** → 弹窗高度收紧到 `min(68vh, 560px)`，并补足内容，使按键位于折叠线以下，必须往下滚才看得到
-- **滚动条停在底部** → 每次点「使用说明」强制 `scrollTop = 0`，始终从标题开始读
-- **按键排列** → 从手柄式的三簇布局（十字方向盘 + Select/Start + A/B）改为**单列平铺**，八个键纵向排列：↑ ↓ ← → Select Start B A
-
-### 调整
-
-- 解锁后的反馈方式改为：**自动关闭使用说明 → 直接切到「规则清单」页 → 在页面顶部显示提示**
-  - 提示内容：如果你不知道你是怎么到这里的，就请联系 git 项目负责人；增删规则也是联系负责人；顺带一提，30 条命没到账 ；）
-  - 提示是页内横幅，可点 × 关掉，不再是独立弹窗
-- 移除原来的「你找到了一条隐藏路径」独立弹窗
-
-### 验证
-
-无头 Chrome 探针结果：
-
-```
-scrollTopOnOpen=0        scrollable=true
-padBelowFoldOnOpen=true  (padTop=835 > dlgBottom=628)
-padBtns=8                padDirection=column
-padVisibleAfterScroll=true
-helpOpenAfter=false      rulesPanelActive=true
-secretVisible=true       tabVisible=true
-```
+- 每次打开使用说明时从顶部开始阅读，不再停留在上次的滚动位置
+- 弹窗高度收紧，避免一屏塞入过多内容
+- 补充「常见问题」区块
 
 ---
 
 ## LST-v1.1.1 · 2026-10-24
 
-**规则清单改为隐藏页签**
+**导航栏精简**
 
 ### 调整
 
-- 「规则清单」标签页默认隐藏，导航栏只显示四个常规页签
-- 「使用说明」弹窗改为可滚动（`max-height: 74vh`），补充「常见问题」五问，内容变长后需要滚动查看
-- 使用说明最底部放了一组手柄按键（↑↓←→ / Select / Start / A / B），默认半透明
-
-### 隐藏页签的解锁方式
-
-在使用说明里依次按下：
-
-```
-↑ ↑ ↓ ↓ ← → ← → B A B A
-```
-
-（Select / Start 不参与序列，是干扰项）
-
-命中后：
-
-- 导航栏出现「规则清单」页签
-- 弹出提示：如果你不知道你是怎么到这里的，就请联系 git 项目负责人；增删规则也是联系负责人；顺带一提，30 条命没到账；）
-- 解锁状态写入 `sessionStorage`，本次会话刷新仍保留，**关掉标签页后重新隐藏**
-
-按键过程中会在手柄下方显示 ● 进度点作为反馈。
-
-### 工程
-
-- 新增 `.tab-hidden` / `.dlg-scroll` / `.konami-*` 样式
-- 无头浏览器验证：初始 `tabHidden=true`、输入完整序列后 `tabHidden=false`、弹窗打开、可见页签从 4 变 5、手柄按钮 8 个、使用说明可滚动
+- 导航栏只保留四个常用页签，高级功能页签默认收起
+- 「使用说明」弹窗改为可滚动，补充常见问题五问
 
 ---
 

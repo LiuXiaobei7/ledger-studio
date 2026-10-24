@@ -7,26 +7,31 @@
 
 ---
 
-## 零、先解决网络（这一步跳过会导致必然失败）
+## 零、先确认能连上 GitHub（跳过这步可能全程失败）
 
-这台机器上存在两个代理，命令行默认走了错的那个：
+命令行工具（`curl` / `git`）默认读 `HTTP_PROXY` / `HTTPS_PROXY` 环境变量。这两个变量指向的代理
+如果访问不了 GitHub，`git push` 就会一直超时——**即使浏览器能正常打开 GitHub 网页**，因为浏览器走的是系统代理，两者不是一回事。
 
-| 代理 | 用途 | 能否访问 github.com |
-| --- | --- | --- |
-| `127.0.0.1:7897` | 系统代理，浏览器使用 | ✅ 可以 |
-| `127.0.0.1:65002` | `HTTP_PROXY` / `HTTPS_PROXY` 环境变量 | ❌ 超时 |
-
-诊断命令（`HTTP 200` 才算通）：
+先诊断：
 
 ```bash
-curl -sS -m 10 -x http://127.0.0.1:7897 -o /dev/null -w "%{http_code}\n" https://github.com
+curl -sS -m 10 -o /dev/null -w "%{http_code}\n" https://github.com
 ```
 
-已做的修复（**只作用于 github.com，不影响其他仓库**）：
+- 返回 `200` → 通了，跳过本节
+- 返回 `000` → 超时，继续往下
+
+如果系统里的代理可用、只是环境变量指错了端口，可以只对 GitHub 单独指定代理（不影响其他仓库）：
 
 ```bash
-git config --global http.https://github.com/.proxy http://127.0.0.1:7897
-git config --global https.https://github.com/.proxy http://127.0.0.1:7897
+git config --global http.https://github.com/.proxy http://127.0.0.1:<你的端口>
+git config --global https.https://github.com/.proxy http://127.0.0.1:<你的端口>
+```
+
+也可以完全不动 git 配置，让发布脚本自己走代理：
+
+```bash
+node scripts/publish-to-github.js --proxy http://127.0.0.1:<你的端口>
 ```
 
 验证：
@@ -41,14 +46,7 @@ git ls-remote https://github.com/octocat/Hello-World.git HEAD
 
 ## 零之一、仓库现在的状态
 
-本地已经建好仓库并提交了 4 次，**只差推送到远端**：
-
-```
-90aa746  feat: v1.1.1 规则清单改为隐藏页签 + 使用说明彩蛋
-88e71fb  feat: v1.1.0 参数配置 + PDF补录 + 启动公告
-d687952  docs: 补充 GitHub 发布步骤
-4b0103c  feat: 档案台账工作台 v1.0.0
-```
+本地已经是初始化好的 git 仓库，提交历史完整，**只差推送到远端**。
 
 所以不用 `git init`、不用 `git add`，**从下面第 2 步开始做就行**。
 
@@ -59,14 +57,14 @@ d687952  docs: 补充 GitHub 发布步骤
 #    建完记下地址，形如 https://github.com/你的用户名/ledger-studio.git
 
 # 2) 在项目目录里执行
-cd C:/Users/liuxi_0wlp8qf/WorkBuddy/2026-10-23-11-45-09/ledger-studio
+cd <项目目录>/ledger-studio
 git remote add origin https://github.com/你的用户名/ledger-studio.git
 git branch -M main
 git push -u origin main
 
 # 3) 打标签（可选，但发 Release 需要）
-git tag -a v1.1.1 -m "LST-v1.1.1"
-git push origin v1.1.1
+git tag -a v1.1.4 -m "LST-v1.1.4"
+git push origin v1.1.4
 ```
 
 第 2 步会弹认证：
@@ -75,6 +73,9 @@ git push origin v1.1.1
 - 密码：**不是账号密码**，要填 Personal Access Token
   - 去 https://github.com/settings/tokens → Generate new token (classic)
   - 勾 `repo` 权限 → 生成 → 复制（只显示一次）
+
+> 上面这套是手动版本。想省事就直接用 `scripts/上传到GitHub.bat`，同样的事它一次做完，
+> 连仓库都会自动创建。
 
 ---
 
