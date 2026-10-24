@@ -6,7 +6,7 @@
   'use strict';
 
   var E = LedgerEngine;
-  var APP_DOC_NO = 'LST-v1.1.2';
+  var APP_DOC_NO = 'LST-v1.1.3';
   var CFG_KEY = 'ledger-studio-cfg-v1';
 
   var $ = function (id) { return document.getElementById(id); };
@@ -1022,22 +1022,39 @@
   $('ruleTable').innerHTML = rt;
 
   /* ==================================================================
-   * 彩蛋：使用说明里藏着的手柄
-   * 顺序正确后解锁「规则清单」标签页，本次会话内有效
+   * 彩蛋：使用说明里藏着的按键
+   *   保密一 ↑↑↓↓←→←→BABA  → 解锁「规则清单」标签页（本次会话内有效）
+   *   保密二 ↑→↓↓↓          → 弹出「飞鹰500KG最累的一次」
+   * 两组序列互不干扰，各自独立计进度
    * ================================================================== */
 
-  var KONAMI = ['up', 'up', 'down', 'down', 'left', 'right', 'left', 'right', 'b', 'a', 'b', 'a'];
-  var konamiPos = 0;
+  var SECRETS = [
+    {
+      id: 'rules',
+      seq: ['up', 'up', 'down', 'down', 'left', 'right', 'left', 'right', 'b', 'a', 'b', 'a'],
+      pos: 0,
+      done: function () { return rulesUnlocked; },
+      fire: function () { unlockRules(); }
+    },
+    {
+      id: 'eagle',
+      seq: ['up', 'right', 'down', 'down', 'down'],
+      pos: 0,
+      done: function () { return false; },
+      fire: function () {
+        if ($('dlgHelp').open) $('dlgHelp').close();
+        $('dlgEagle').showModal();
+      }
+    }
+  ];
+
   var rulesUnlocked = false;
 
   function unlockRules(silent) {
-    if (rulesUnlocked) {
-      if (!silent) goRules();
-      return;
-    }
     rulesUnlocked = true;
     $('tabRules').classList.remove('tab-hidden');
     try { sessionStorage.setItem('ledger-rules-unlocked', '1'); } catch (e) { /* 忽略 */ }
+    // 静默模式（页面加载时恢复状态）只显示页签，不跳转
     if (!silent) goRules();
   }
 
@@ -1050,23 +1067,19 @@
   }
 
   function konamiInput(key) {
-    if (rulesUnlocked) return;
-    if (key === KONAMI[konamiPos]) {
-      konamiPos++;
-    } else {
-      konamiPos = (key === KONAMI[0]) ? 1 : 0;
-    }
-    var note = $('konamiNote');
-    if (note) {
-      if (konamiPos >= KONAMI.length) {
-        konamiPos = 0;
-        unlockRules(false);
-        return;
+    SECRETS.forEach(function (s) {
+      if (s.done()) return;
+      if (key === s.seq[s.pos]) {
+        s.pos++;
+      } else {
+        // 失配后若该键正好是序列首位，则从第 2 位接着算
+        s.pos = (key === s.seq[0]) ? 1 : 0;
       }
-      note.textContent = konamiPos > 0
-        ? new Array(konamiPos + 1).join('●')
-        : '';
-    }
+      if (s.pos >= s.seq.length) {
+        s.pos = 0;
+        s.fire();
+      }
+    });
   }
 
   $$('#konamiPad .kbtn').forEach(function (b) {
@@ -1077,6 +1090,8 @@
       konamiInput(b.getAttribute('data-konami'));
     });
   });
+
+  $('btnEagleOk').addEventListener('click', function () { $('dlgEagle').close(); });
 
   $('btnCloseSecret').addEventListener('click', function () {
     $('rulesSecret').classList.add('hidden');

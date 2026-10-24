@@ -5,6 +5,40 @@
 
 ---
 
+## LST-v1.1.3 · 2026-10-24
+
+**彩蛋可读性与新增第二个彩蛋**
+
+### 调整
+
+- 按键从单列纵向改为**横排一行**（8 个键顺序：↑ ↓ ← → Select Start B A），窄屏自动换行
+- 删除按键下方的进度点（`#konamiNote` 整个移除），过程中不再有任何视觉反馈
+- 按键容器透明度 `0.5 → 0.2`，几乎融进背景；鼠标悬停才回到完全不透明
+
+### 新增
+
+- 第二个秘籍：**↑ → ↓ ↓ ↓**（上右下下下）
+  - 命中后关闭使用说明，弹出标题为「飞鹰500KG最累的一次」的弹窗
+  - 与第一个秘籍互不干扰：两组序列各自独立计进度，同一个 ↑ 键会同时推进两边
+- 新增 `.dlg-sm`（窄弹窗）与 `.dlg-quote`（引文块）样式
+
+### 验证
+
+无头 Chrome 探针：
+
+```
+scrollTopOnOpen=0   padBelowFold=true   padDirection=row
+padOpacity=0.2      noteExists=false    btnCount=8
+padHeight=44        padWidth=461
+eagleOpen=true      eagleTitle=飞鹰500KG最累的一次
+helpClosedAfterEagle=true   rulesTabHidden=true   （此时规则页签仍未解锁，正确）
+rulesUnlocked=true  rulesPanelActive=true  secretShown=true
+```
+
+两组秘籍在同一个会话里连续触发，互不影响。
+
+---
+
 ## LST-v1.1.2 · 2026-10-24
 
 **修正隐藏页签彩蛋的三处体验问题**
