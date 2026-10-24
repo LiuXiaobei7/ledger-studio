@@ -1,0 +1,24 @@
+# 依赖（本项目零依赖，留作兜底）
+node_modules/
+package-lock.json
+yarn.lock
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# 临时与日志
+*.log
+*.tmp
+~$*
+
+# 用户自己的台账数据，不要提交
+samples/我的*
+output/
+dist/
+
+# 本地覆盖配置
+config.local.json

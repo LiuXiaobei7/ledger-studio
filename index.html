@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>档案台账工作台 · Ledger Studio</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">档</span>
+    <div>
+      <h1>档案台账工作台</h1>
+      <p class="sub">检查 · 生成 · 规范化排版　<span id="docno" class="docno">—</span></p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span id="envBadge" class="badge badge-muted">离线可用</span>
+    <button id="btnUpdate" class="btn btn-ghost" title="检查是否有新版本">检查更新</button>
+    <button id="btnHelp" class="btn btn-ghost">使用说明</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="check">检查台账</button>
+  <button class="tab" data-tab="build">生成台账</button>
+  <button class="tab" data-tab="rules">规则清单</button>
+</nav>
+
+<main>
+  <!-- ================= 检查 ================= -->
+  <section id="panel-check" class="panel active">
+    <div class="grid2">
+      <div class="drop" id="dropFile" data-target="file">
+        <input type="file" id="inFile" accept=".xlsx,.xlsm" hidden>
+        <div class="drop-inner">
+          <div class="drop-icon">📄</div>
+          <strong>文件台账</strong>
+          <span class="drop-hint">点击选择或拖入 .xlsx</span>
+          <span class="drop-file" id="nameFile">未选择</span>
+        </div>
+      </div>
+      <div class="drop" id="dropJuan" data-target="juan">
+        <input type="file" id="inJuan" accept=".xlsx,.xlsm" hidden>
+        <div class="drop-inner">
+          <div class="drop-icon">🗂️</div>
+          <strong>案卷台账</strong>
+          <span class="drop-hint">点击选择或拖入 .xlsx</span>
+          <span class="drop-file" id="nameJuan">未选择</span>
+        </div>
+      </div>
+    </div>
+
+    <details class="advanced">
+      <summary>高级选项</summary>
+      <div class="adv-body">
+        <label class="chk">
+          <input type="checkbox" id="optPdf">
+          <span>同时校验 PDF 文件名与页数（选中后需再选 PDF 文件）</span>
+        </label>
+        <input type="file" id="inPdf" accept=".pdf" multiple hidden>
+        <div id="pdfPickRow" class="hidden">
+          <button class="btn btn-ghost" id="btnPickPdf">选择 PDF 文件…</button>
+          <span id="pdfCount" class="muted">未选择</span>
+        </div>
+        <p class="tip">PDF 页数为浏览器端估算，仅作参考；精确校验请用 CLI 版。</p>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button id="btnCheck" class="btn btn-primary" disabled>开始检查</button>
+      <button id="btnLoadSample" class="btn btn-ghost">载入示例台账</button>
+      <span id="checkStatus" class="muted"></span>
+    </div>
+
+    <div id="checkResult" class="hidden">
+      <div class="summary">
+        <div class="card card-err"><span class="num" id="cntErr">0</span><span class="lbl">错误</span></div>
+        <div class="card card-warn"><span class="num" id="cntWarn">0</span><span class="lbl">提醒</span></div>
+        <div class="card card-info"><span class="num" id="cntInfo">0</span><span class="lbl">提示</span></div>
+        <div class="card card-verdict"><span class="num" id="verdict">—</span><span class="lbl">结论</span></div>
+      </div>
+      <div class="actions">
+        <button id="btnExportMd" class="btn btn-ghost">导出检查报告 (.md)</button>
+        <button id="btnDlFile" class="btn btn-ghost">下载已排版·文件台账</button>
+        <button id="btnDlJuan" class="btn btn-ghost">下载已排版·案卷台账</button>
+      </div>
+      <div id="ruleResults"></div>
+    </div>
+  </section>
+
+  <!-- ================= 生成 ================= -->
+  <section id="panel-build" class="panel">
+    <div class="grid2">
+      <div class="drop" id="dropList" data-target="list">
+        <input type="file" id="inList" accept=".xlsx,.xlsm,.csv,.tsv,.txt" hidden>
+        <div class="drop-inner">
+          <div class="drop-icon">📋</div>
+          <strong>要素清单</strong>
+          <span class="drop-hint">.xlsx / .csv / .tsv，也可直接粘贴</span>
+          <span class="drop-file" id="nameList">未选择</span>
+        </div>
+      </div>
+      <div class="paste">
+        <label for="taList"><strong>或直接粘贴表格</strong>（首行为表头，支持 Tab / 竖线 / 逗号）</label>
+        <textarea id="taList" spellcheck="false" placeholder="案卷档号	案卷题名	脊背宽度	文件题名	文件编号	文件日期	责任者	页数
+D0109-KJG01-0011-916-001	箱式变压器	30mm	光伏发电用变压器合格证	X001	20250325	某厂家	3"></textarea>
+      </div>
+    </div>
+
+    <details class="advanced" open>
+      <summary>生成选项</summary>
+      <div class="adv-body">
+        <div class="row">
+          <label for="inAnchor">归档日期锚点</label>
+          <input type="date" id="inAnchor">
+          <span class="tip">留空则取今天（遇周末自动回退到最近工作日）</span>
+        </div>
+        <div class="row">
+          <label for="inPrefix">文件名前缀</label>
+          <input type="text" id="inPrefix" value="导入模板" size="12">
+        </div>
+        <p class="tip">必填 8 项：案卷档号、案卷题名、脊背宽度、文件题名、文件编号、文件日期、责任者、页数。跨多个分类号会自动按分类拆成多本。</p>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button id="btnBuild" class="btn btn-primary">生成台账</button>
+      <button id="btnFillSample" class="btn btn-ghost">填入示例清单</button>
+      <span id="buildStatus" class="muted"></span>
+    </div>
+    <div id="buildResult" class="hidden">
+      <div id="buildSummary"></div>
+      <div id="buildDownloads" class="actions"></div>
+    </div>
+  </section>
+
+  <!-- ================= 规则 ================= -->
+  <section id="panel-rules" class="panel">
+    <p class="tip">共 <b id="ruleCount">0</b> 条规则，与 CLI 版（Python）口径一致。</p>
+    <div id="ruleTable"></div>
+  </section>
+</main>
+
+<dialog id="dlgHelp">
+  <h2>使用说明</h2>
+  <ol class="help-list">
+    <li><b>检查台账</b>：放入文件台账与案卷台账，点「开始检查」。结果按规则分组，可定位到具体行号。</li>
+    <li><b>生成台账</b>：填 8 项要素的清单，自动补齐 60 余个字段并生成两本台账。</li>
+    <li><b>处理位置</b>：全部在你的浏览器内完成，文件不会上传到任何服务器。</li>
+    <li><b>已排版副本</b>：检查完成后可下载，格式为宋体 11 号、水平垂直居中、文本格式、自动换行。</li>
+    <li><b>PDF 校验</b>：需手动勾选并选择 PDF 文件，页数为估算值。</li>
+  </ol>
+  <form method="dialog"><button class="btn btn-primary">知道了</button></form>
+</dialog>
+
+<footer class="foot">
+  <span id="footVer">Ledger Studio</span>
+  <span>本地运行 · 数据不出本机</span>
+</footer>
+
+<script src="assets/vendor/exceljs.min.js"></script>
+<script src="assets/engine/data.js"></script>
+<script src="assets/engine/engine.js"></script>
+<script src="assets/engine/excelio.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
